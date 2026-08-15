@@ -1,0 +1,61 @@
+# =============================================================================
+# Development override: source mounts, hot reload, exposed infrastructure ports
+# =============================================================================
+
+services:
+  postgres:
+    # Host-side default avoids colliding with a Postgres instance already
+    # running on the developer's machine on the standard port.
+    ports:
+      - '${POSTGRES_PORT:-15432}:5432'
+
+  redis:
+    # Host-side default avoids colliding with a Redis instance already
+    # running on the developer's machine on the standard port.
+    ports:
+      - '${REDIS_PORT:-16379}:6379'
+
+  backend:
+    command:
+      [
+        'uvicorn',
+        'app.main:app',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8000',
+        '--reload',
+        '--reload-dir',
+        '/app/app',
+      ]
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+    ports:
+      - '${BACKEND_PORT:-8000}:8000'
+    volumes:
+      - ../backend/app:/app/app:ro
+      - model-cache:/var/cache/aegis/models
+
+  frontend:
+    build:
+      target: dev
+    # Source is mounted for hot reload; node_modules and .next stay inside the
+    # container so host and container platforms cannot conflict.
+    volumes:
+      - ../frontend/app:/app/app
+      - ../frontend/components:/app/components
+      - ../frontend/lib:/app/lib
+      - ../frontend/types:/app/types
+      - ../frontend/public:/app/public
+    environment:
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Browser-visible URL: the host-exposed port.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Server-side (Next.js process, inside the container) URL: the backend's
+      # Docker Compose service name. Without this, Server Component fetches
+      # resolve "localhost" to the frontend container itself.
+      API_INTERNAL_URL: http://backend:8000
+    ports:
+      - '${FRONTEND_PORT:-3000}:3000'

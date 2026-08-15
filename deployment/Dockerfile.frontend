@@ -1,0 +1,78 @@
+# =============================================================================
+# Frontend image — multi-stage, non-root, Next.js standalone output
+# =============================================================================
+
+# ----------------------------------------------------------------------------
+# Stage 1: dependencies
+# ----------------------------------------------------------------------------
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-fund --no-audit
+
+# ----------------------------------------------------------------------------
+# Stage 2: build
+# ----------------------------------------------------------------------------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Baked into the client bundle at build time, so it must be supplied here.
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY frontend/ ./
+
+RUN npm run build
+
+# ----------------------------------------------------------------------------
+# Stage 3: development server (used only by docker-compose.dev.yml)
+# ----------------------------------------------------------------------------
+FROM node:20-alpine AS dev
+
+WORKDIR /app
+
+ENV NODE_ENV=development \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY frontend/ ./
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+
+# ----------------------------------------------------------------------------
+# Stage 4: minimal runtime
+# ----------------------------------------------------------------------------
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 --ingroup nodejs nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+USER nextjs
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD node -e "require('http').get('http://127.0.0.1:3000/', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+
+CMD ["node", "server.js"]

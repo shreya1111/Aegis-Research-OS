@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Both themes are authored, not derived (design §5.10). The dark theme uses its own
+ * surface ramp and desaturated accents rather than inverting the light theme.
+ */
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+
+    --radius-control: 0.5rem;
+    --radius-surface: 0.75rem;
+
+    --background: 0 0% 100%;
+    --foreground: 224 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 20% 12%;
+
+    --primary: 221 76% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 16% 95%;
+    --secondary-foreground: 224 20% 20%;
+
+    --muted: 220 16% 96%;
+    --muted-foreground: 220 9% 44%;
+
+    --accent: 221 70% 96%;
+    --accent-foreground: 221 76% 34%;
+
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 62% 34%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 32 88% 42%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 208 79% 42%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 14% 89%;
+    --input: 220 14% 89%;
+    --ring: 221 76% 46%;
+  }
+
+  .dark {
+    /* Layered near-neutral darks, never pure black, to reduce halation. */
+    --background: 224 24% 8%;
+    --foreground: 220 16% 94%;
+
+    --card: 224 22% 11%;
+    --card-foreground: 220 16% 94%;
+
+    --popover: 224 22% 13%;
+    --popover-foreground: 220 16% 94%;
+
+    --primary: 217 82% 66%;
+    --primary-foreground: 224 30% 10%;
+
+    --secondary: 223 18% 18%;
+    --secondary-foreground: 220 16% 92%;
+
+    --muted: 223 18% 16%;
+    --muted-foreground: 220 12% 66%;
+
+    --accent: 223 26% 20%;
+    --accent-foreground: 217 82% 78%;
+
+    --destructive: 0 66% 58%;
+    --destructive-foreground: 224 30% 10%;
+
+    --success: 152 48% 52%;
+    --success-foreground: 224 30% 10%;
+
+    --warning: 34 78% 60%;
+    --warning-foreground: 224 30% 10%;
+
+    --info: 208 68% 62%;
+    --info-foreground: 224 30% 10%;
+
+    --border: 223 16% 22%;
+    --input: 223 16% 22%;
+    --ring: 217 82% 66%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+
+  /* Focus is a functional affordance, not decoration (design §5.9). */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

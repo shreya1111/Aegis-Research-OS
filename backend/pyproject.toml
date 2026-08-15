@@ -1,0 +1,139 @@
+[build-system]
+requires = ["setuptools==83.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegis-research-os-backend"
+version = "0.1.0"
+description = "Aegis Research OS — autonomous multi-agent AI research assistant (FastAPI backend)"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    "fastapi==0.140.13",
+    "uvicorn[standard]==0.52.0",
+    "pydantic[email]==2.13.4",
+    "email-validator==2.3.0",
+    "pydantic-settings==2.14.2",
+    "python-multipart==0.0.32",
+    "sqlalchemy[asyncio]==2.0.51",
+    "asyncpg==0.31.0",
+    "psycopg2-binary==2.9.12",
+    "alembic==1.18.5",
+    "pyjwt==2.13.0",
+    "bcrypt==5.0.0",
+    "redis==8.0.1",
+    "greenlet==3.5.4",
+    "pgvector==0.5.0",
+    "pypdf==6.14.2",
+    "pdfplumber==0.11.10",
+    "python-docx==1.2.0",
+    "pymupdf==1.28.0",
+    "pytesseract==0.3.13",
+    "pillow==12.3.0",
+    # Pinned explicitly (and installed from the CPU wheel index in
+    # Dockerfile.backend) so that sentence-transformers' dependency
+    # resolution does not pull the CUDA-enabled build, which drags in
+    # several GB of unused NVIDIA libraries (cudnn/cusparselt/nccl).
+    "torch==2.9.1",
+    "sentence-transformers==5.6.1",
+    "tiktoken==0.13.0",
+    "httpx==0.28.1",
+    "langgraph==1.2.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "pytest-cov==7.1.0",
+    "ruff==0.16.0",
+    "mypy==2.3.0",
+    "pip-audit==2.10.1",
+    "fakeredis==2.37.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+# ---------------------------------------------------------------------------
+# Ruff — lint + format (replaces flake8/isort/black)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "RUF", # ruff-specific
+    "ASYNC",
+    "S",   # flake8-bandit (security)
+]
+ignore = [
+    "S101", # assert is expected in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------------------------------------------------------------------------
+# mypy — strict typing
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+no_implicit_reexport = true
+show_error_codes = true
+plugins = ["pydantic.mypy"]
+
+# Third-party packages with no bundled type stubs and no stub package on
+# PyPI. Their surface used here is small, so `Any`-typed usage at these
+# boundaries is an accepted, explicit trade-off rather than a project-wide
+# strictness relaxation.
+[[tool.mypy.overrides]]
+module = ["fitz", "pytesseract", "pdfplumber", "pdfplumber.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "unit: isolated tests with no external services",
+    "integration: tests that exercise the wired application",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

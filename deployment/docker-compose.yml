@@ -1,0 +1,102 @@
+# =============================================================================
+# Base topology: postgres · redis · backend · frontend
+#
+# Run from the repository root:
+#   docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
+# =============================================================================
+
+name: aegis-research-os
+
+services:
+  postgres:
+    # pgvector is required from Phase 1 onward; this image is postgres:16 with the
+    # extension pre-installed, which the initial Alembic migration enables.
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aegis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-aegis}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-aegis} -d ${POSTGRES_DB:-aegis}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      POSTGRES_URL: ${POSTGRES_URL:?POSTGRES_URL must be set}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET: ${JWT_SECRET:-insecure-development-secret-change-me}
+      # Ingestion/embedding config (Phase 3). Defaults live in Settings; passed
+      # through so operators can tune them without a code change. EMBEDDING_MODEL
+      # must match the image's build-arg or the model is downloaded at runtime.
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-384}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-104857600}
+      OCR_ENABLED: ${OCR_ENABLED:-true}
+      # LLM provider (Phase 4). Switching providers is this env var alone; it
+      # never touches agent or business logic.
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL_FAST: ${LLM_MODEL_FAST:-gpt-4o-mini}
+      LLM_MODEL_STRONG: ${LLM_MODEL_STRONG:-gpt-4o}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      # Retrieval / hybrid search (Phase 4).
+      RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-40}
+      RETRIEVAL_TOP_N: ${RETRIEVAL_TOP_N:-8}
+      RETRIEVAL_RERANK_ENABLED: ${RETRIEVAL_RERANK_ENABLED:-false}
+      RATE_LIMIT_QUERY_PER_MINUTE: ${RATE_LIMIT_QUERY_PER_MINUTE:-20}
+      # External academic sources (Phase 5) — optional; a dead/unconfigured
+      # provider fails soft, never fatal to a run.
+      SEMANTIC_SCHOLAR_API_KEY: ${SEMANTIC_SCHOLAR_API_KEY:-}
+      CORE_API_KEY: ${CORE_API_KEY:-}
+      WEB_SEARCH_API_KEY: ${WEB_SEARCH_API_KEY:-}
+      # Agent orchestration (Phase 5).
+      AGENT_MAX_RETRIES: ${AGENT_MAX_RETRIES:-1}
+      AGENT_MAX_SUBTASKS: ${AGENT_MAX_SUBTASKS:-6}
+    volumes:
+      - model-cache:/var/cache/aegis/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  redis-data:
+  model-cache:

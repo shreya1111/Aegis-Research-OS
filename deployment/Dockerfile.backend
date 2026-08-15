@@ -1,0 +1,83 @@
+# =============================================================================
+# Backend image — multi-stage, non-root (design §11.4)
+#
+# Includes the OCR toolchain and PDF system libraries so document ingestion and
+# report export work without further image changes.
+# =============================================================================
+
+# ----------------------------------------------------------------------------
+# Stage 1: build wheels for the dependency set
+# ----------------------------------------------------------------------------
+FROM python:3.11-slim-bookworm AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /build
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/pyproject.toml backend/alembic.ini ./
+COPY backend/app ./app
+
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    # Install the CPU-only torch build first, from PyTorch's dedicated CPU
+    # wheel index. sentence-transformers depends on plain "torch", and
+    # without this pip would otherwise resolve the default CUDA-enabled
+    # build from PyPI, pulling several GB of unused NVIDIA libraries
+    # (cudnn/cusparselt/nccl) into the image and dramatically slowing builds.
+    && /opt/venv/bin/pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu \
+    && /opt/venv/bin/pip install .
+
+# ----------------------------------------------------------------------------
+# Stage 2: slim runtime
+# ----------------------------------------------------------------------------
+FROM python:3.11-slim-bookworm AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    # Sentence-transformers / cross-encoder weights are cached in a volume so
+    # containers do not re-download them on every start (design §11.1).
+    HF_HOME=/var/cache/aegis/models
+
+# tesseract-ocr is the OCR engine for scanned-PDF fallback (design §8.2). PDF
+# page rasterisation uses PyMuPDF (a Python wheel), so poppler is not needed.
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+        tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 1001 aegis \
+    && useradd --system --uid 1001 --gid aegis --create-home aegis \
+    && mkdir -p /var/cache/aegis/models \
+    && chown -R aegis:aegis /var/cache/aegis
+
+COPY --from=builder /opt/venv /opt/venv
+
+WORKDIR /app
+COPY --chown=aegis:aegis backend/app ./app
+COPY --chown=aegis:aegis backend/alembic.ini ./
+COPY --chown=aegis:aegis --chmod=755 backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# Pre-download the sentence-transformers model at build time so the first
+# ingestion in a fresh container does not pay a multi-second download, and so
+# the image runs offline (design §4.3: embeddings run in-process, no external
+# embedding API). Baked into the image layer as root, then made readable to
+# the runtime user. EMBEDDING_MODEL must match Settings.embedding_model.
+ARG EMBEDDING_MODEL=all-MiniLM-L6-v2
+RUN mkdir -p /var/cache/aegis/models \
+    && HF_HOME=/var/cache/aegis/models python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}')" \
+    && chown -R aegis:aegis /var/cache/aegis
+
+USER aegis
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
