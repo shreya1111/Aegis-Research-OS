@@ -31,7 +31,7 @@ def _build_provider(settings: Settings) -> LLMProvider:
     if settings.llm_provider == "gemini":
         inner: LLMProvider = GeminiProvider(
             base_url=settings.llm_base_url
-            if settings.llm_base_url != "https://api.openai.com/v1"
+            if settings.llm_base_url not in {"https://api.openai.com/v1", "https://api.sambanova.ai/v1"}
             else _DEFAULT_GEMINI_BASE_URL,
             api_key=settings.llm_api_key,
             model_fast=settings.llm_model_fast,

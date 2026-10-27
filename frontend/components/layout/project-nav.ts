@@ -15,7 +15,8 @@ export interface ProjectNavItem {
 export const PROJECT_NAV_ITEMS: readonly ProjectNavItem[] = [
   { segment: '', label: 'Chat', glyph: '💬' },
   { segment: 'documents', label: 'Documents', glyph: '📄' },
-  { segment: 'graph', label: 'Knowledge Graph', glyph: '🕸', comingSoon: true },
+  { segment: 'graph', label: 'Knowledge Graph', glyph: '🕸' },
+  { segment: 'analytics', label: 'Analytics', glyph: '📈' },
   { segment: 'reports', label: 'Reports', glyph: '📊' },
   { segment: 'settings', label: 'Settings', glyph: '⚙' },
 ] as const;

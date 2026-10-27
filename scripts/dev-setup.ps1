@@ -58,9 +58,6 @@ if (-not $SkipBackend) {
         Pop-Location
     }
     Write-Skip 'Backend dependencies installed.'
-    Write-Skip 'Integration tests require a running Postgres with an "aegis_test" database.'
-    Write-Skip 'After starting the dev stack, create it once with:'
-    Write-Skip '  docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml exec postgres psql -U aegis -d aegis -c "CREATE DATABASE aegis_test"'
 }
 
 # --- Frontend ---------------------------------------------------------------
@@ -82,5 +79,6 @@ Next steps:
   Full stack   docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
   Backend only backend/.venv/Scripts/python.exe -m uvicorn app.main:app --reload   (run from backend/)
   Frontend only npm run dev                                                        (run from frontend/)
+  Test setup   pwsh ./scripts/setup-test-db.ps1                                   (creates aegis_test database)
   Verify       pwsh ./scripts/verify.ps1
 '@

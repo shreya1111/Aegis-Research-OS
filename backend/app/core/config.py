@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     environment: Environment = "development"
     log_level: LogLevel = "INFO"
     api_v1_prefix: str = "/api/v1"
+    data_dir: str = Field(default="./data", min_length=1)  # Directory for uploaded files
 
     # -- HTTP -------------------------------------------------------------
     cors_origins: CsvList = Field(default_factory=lambda: ["http://localhost:3000"])
@@ -121,14 +122,14 @@ class Settings(BaseSettings):
     # -- LLM provider layer (design §4.1) ------------------------------------
     #: Selects the concrete `LLMProvider` implementation. Switching providers
     #: never touches agent or business logic (design §4.1).
-    llm_provider: Literal["openai", "gemini", "sambanova"] = Field(default="openai")
+    llm_provider: Literal["openai", "gemini", "sambanova"] = Field(default="sambanova")
     llm_api_key: str = Field(default="")
     #: Real model name per tier, per provider. `fast` backs high-volume,
     #: low-judgement agents; `strong` backs planning/composition/review
     #: (design §4.1 tier policy table).
-    llm_model_fast: str = Field(default="gpt-4o-mini")
-    llm_model_strong: str = Field(default="gpt-4o")
-    llm_base_url: str = Field(default="https://api.openai.com/v1")
+    llm_model_fast: str = Field(default="Meta-Llama-3.1-8B-Instruct")
+    llm_model_strong: str = Field(default="Meta-Llama-3.3-70B-Instruct")
+    llm_base_url: str = Field(default="https://api.sambanova.ai/v1")
     llm_request_timeout_seconds: float = Field(default=60.0, gt=0)
     llm_max_retries: int = Field(default=3, ge=0)
     #: Circuit breaker: consecutive failures before a provider is tripped

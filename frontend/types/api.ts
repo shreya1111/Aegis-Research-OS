@@ -160,3 +160,36 @@ export interface TraceRun {
   run_id: string;
   steps: TraceStep[];
 }
+
+// Analytics types for Phase 8
+export const ANALYTICS_DATASET_STATUSES = ['pending', 'profiled', 'failed'] as const;
+export type AnalyticsDatasetStatus = (typeof ANALYTICS_DATASET_STATUSES)[number];
+
+export const ANALYTICS_ANALYSIS_STATUSES = ['pending', 'completed', 'failed'] as const;
+export type AnalyticsAnalysisStatus = (typeof ANALYTICS_ANALYSIS_STATUSES)[number];
+
+export interface AnalyticsDataset {
+  id: string;
+  project_id: string;
+  filename: string;
+  status: AnalyticsDatasetStatus;
+  row_count: number | null;
+  column_count: number | null;
+  profile_data: Record<string, any> | null;
+  file_path: string;
+  created_at: string;
+}
+
+export interface AnalyticsAnalysis {
+  id: string;
+  dataset_id: string;
+  project_id: string;
+  question: string;
+  analysis_code: string | null;
+  result_data: Record<string, any> | null;
+  chart_data: Record<string, any> | null;
+  explanation: string | null;
+  status: AnalyticsAnalysisStatus;
+  error_message: string | null;
+  created_at: string;
+}

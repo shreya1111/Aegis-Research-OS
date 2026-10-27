@@ -59,11 +59,11 @@ services:
       OCR_ENABLED: ${OCR_ENABLED:-true}
       # LLM provider (Phase 4). Switching providers is this env var alone; it
       # never touches agent or business logic.
-      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_PROVIDER: ${LLM_PROVIDER:-sambanova}
       LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODEL_FAST: ${LLM_MODEL_FAST:-gpt-4o-mini}
-      LLM_MODEL_STRONG: ${LLM_MODEL_STRONG:-gpt-4o}
-      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_MODEL_FAST: ${LLM_MODEL_FAST:-Meta-Llama-3.1-8B-Instruct}
+      LLM_MODEL_STRONG: ${LLM_MODEL_STRONG:-Meta-Llama-3.3-70B-Instruct}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.sambanova.ai/v1}
       # Retrieval / hybrid search (Phase 4).
       RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-40}
       RETRIEVAL_TOP_N: ${RETRIEVAL_TOP_N:-8}

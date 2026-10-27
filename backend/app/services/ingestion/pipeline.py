@@ -16,6 +16,7 @@ from app.db.models.document import DocumentStatus
 from app.db.repositories.document_chunk_repository import DocumentChunkRepository
 from app.db.repositories.document_repository import DocumentRepository
 from app.services.embedding_service import EmbeddingService
+from app.services.graph_service import GraphService
 from app.services.ingestion.chunking import chunk_document
 from app.services.ingestion.errors import ExtractionError
 from app.services.ingestion.metadata import build_failure_metadata, build_metadata
@@ -47,11 +48,13 @@ class IngestionPipeline:
         document_repository: DocumentRepository,
         chunk_repository: DocumentChunkRepository,
         embedding_service: EmbeddingService,
+        graph_service: GraphService | None = None,
         settings: Settings,
     ) -> None:
         self._documents = document_repository
         self._chunks = chunk_repository
         self._embeddings = embedding_service
+        self._graph_service = graph_service
         self._settings = settings
 
     def _parse(self, *, mime_type: str, content: bytes) -> ExtractedDocument:
@@ -129,6 +132,31 @@ class IngestionPipeline:
             await self._documents.update_status(
                 document, status=DocumentStatus.READY, metadata=metadata
             )
+            
+            # Extract entities for knowledge graph (Phase 7)
+            if self._graph_service is not None:
+                try:
+                    await self._graph_service.process_document_entities(
+                        project_id=project_id,
+                        document=extracted
+                    )
+                    logger.info(
+                        "ingestion.graph_extraction.completed",
+                        extra={
+                            "event": "ingestion.graph_extraction.completed",
+                            "document_id": str(document_id),
+                        }
+                    )
+                except Exception:
+                    # Entity extraction failure should not fail the entire ingestion
+                    logger.warning(
+                        "ingestion.graph_extraction.failed",
+                        extra={
+                            "event": "ingestion.graph_extraction.failed",
+                            "document_id": str(document_id),
+                        }
+                    )
+            
             logger.info(
                 "ingestion.completed",
                 extra={

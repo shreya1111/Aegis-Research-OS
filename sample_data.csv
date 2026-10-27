@@ -1,0 +1,11 @@
+name,age,gender,salary,department
+Alice,28,F,75000,Engineering
+Bob,35,M,85000,Engineering
+Carol,32,F,78000,Sales
+David,29,M,72000,Sales
+Eve,41,F,92000,Engineering
+Frank,38,M,88000,Marketing
+Grace,26,F,68000,Marketing
+Henry,45,M,95000,Engineering
+Iris,33,F,81000,Sales
+Jack,31,M,76000,Marketing

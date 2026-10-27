@@ -11,8 +11,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.models.base import Base, CreatedAtMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.db.models.analytics import AnalyticsDataset
     from app.db.models.conversation import Conversation
     from app.db.models.document import Document
+    from app.db.models.graph_edge import GraphEdge
+    from app.db.models.graph_node import GraphNode
+    from app.db.models.report import Report
     from app.db.models.user import User
 
 
@@ -44,4 +48,24 @@ class Project(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
         order_by="Conversation.created_at.desc()",
+    )
+    reports: Mapped[list[Report]] = relationship(
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="Report.created_at.desc()",
+    )
+    graph_nodes: Mapped[list[GraphNode]] = relationship(
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="GraphNode.created_at.desc()",
+    )
+    graph_edges: Mapped[list[GraphEdge]] = relationship(
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="GraphEdge.created_at.desc()",
+    )
+    analytics_datasets: Mapped[list[AnalyticsDataset]] = relationship(
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="AnalyticsDataset.created_at.desc()",
     )
