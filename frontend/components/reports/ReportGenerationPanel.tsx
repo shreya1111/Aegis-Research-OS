@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/lib/toast/toast-context';
 import { createReport } from '@/lib/api/reports';
-import type { ReportType } from '@/types/report';
+import type { Report, ReportType } from '@/types/report';
 
 import { ReportList } from './ReportList';
 
@@ -46,7 +46,7 @@ export function ReportGenerationPanel(): React.JSX.Element {
   const [selectedType, setSelectedType] = useState<ReportType>('literature_review');
   const [title, setTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [reports] = useState<any[]>([]);
+  const [reports] = useState<Report[]>([]);
   const [isLoading] = useState(false);
 
   const handleGenerate = async () => {
@@ -61,8 +61,9 @@ export function ReportGenerationPanel(): React.JSX.Element {
       notify('success', 'Report generation started. Check back in a few minutes.');
       setTitle('');
       // In a full implementation, this would refresh the reports list
-    } catch (error: any) {
-      notify('error', error.message || 'Failed to start report generation');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : null;
+      notify('error', message || 'Failed to start report generation');
     } finally {
       setIsGenerating(false);
     }

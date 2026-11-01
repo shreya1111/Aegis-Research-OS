@@ -17,6 +17,14 @@ class FakeProjectRepository:
 
     def __init__(self) -> None:
         self._projects: dict[uuid.UUID, Project] = {}
+        #: project id → user ids invited as members (Phase 10, FR-A).
+        self._members: dict[uuid.UUID, set[uuid.UUID]] = {}
+
+    def add_member(self, project_id: uuid.UUID, user_id: uuid.UUID) -> None:
+        self._members.setdefault(project_id, set()).add(user_id)
+
+    def _can_access(self, project: Project, user_id: uuid.UUID) -> bool:
+        return project.owner_id == user_id or user_id in self._members.get(project.id, set())
 
     async def create(self, *, owner_id: uuid.UUID, title: str, description: str | None) -> Project:
         project = Project(
@@ -37,6 +45,14 @@ class FakeProjectRepository:
             return None
         return project
 
+    async def get_by_id_for_member(
+        self, project_id: uuid.UUID, *, user_id: uuid.UUID
+    ) -> Project | None:
+        project = self._projects.get(project_id)
+        if project is None or not self._can_access(project, user_id):
+            return None
+        return project
+
     async def list_for_owner(
         self, *, owner_id: uuid.UUID, offset: int, limit: int
     ) -> tuple[list[Project], int]:
@@ -44,6 +60,14 @@ class FakeProjectRepository:
         owned.sort(key=lambda p: p.created_at, reverse=True)
         total = len(owned)
         return owned[offset : offset + limit], total
+
+    async def list_for_member(
+        self, *, user_id: uuid.UUID, offset: int, limit: int
+    ) -> tuple[list[Project], int]:
+        accessible = [p for p in self._projects.values() if self._can_access(p, user_id)]
+        accessible.sort(key=lambda p: p.created_at, reverse=True)
+        total = len(accessible)
+        return accessible[offset : offset + limit], total
 
     async def delete(self, project: Project) -> None:
         self._projects.pop(project.id, None)

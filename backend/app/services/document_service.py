@@ -103,6 +103,24 @@ class DocumentService:
             raise NotFoundError("Document not found.")
         return document
 
+    async def get_document_by_id(self, document_id: UUID) -> Document:
+        """Fetch a document by id alone, without authorising it.
+
+        Used only by ``/documents/{id}``, which has no project id in the path:
+        the router loads the document, resolves access on *its* ``project_id``
+        through the project-scope dependency, and only then acts. Authorisation
+        is never skipped — it just happens one step later than the query.
+
+        Raises
+        ------
+        NotFoundError
+            If no document has that id.
+        """
+        document = await self._documents.get_by_id(document_id)
+        if document is None:
+            raise NotFoundError("Document not found.")
+        return document
+
     async def list_documents(self, *, project_id: UUID) -> list[Document]:
         return await self._documents.list_for_project(project_id=project_id)
 

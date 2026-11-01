@@ -9,7 +9,10 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { useToast } from '@/lib/toast/toast-context';
 import type { Project } from '@/types/api';
 
+import { MembersPanel } from '@/components/collaboration/MembersPanel';
+import { Skeleton } from '@/components/feedback/Skeleton';
 import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,7 +25,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/feedback/Skeleton';
 
 export default function ProjectSettingsPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
@@ -72,6 +74,8 @@ export default function ProjectSettingsPage(): React.JSX.Element {
     }
   }
 
+  const isOwner = project?.role === 'owner';
+
   return (
     <div className="container flex max-w-2xl flex-col gap-6 py-10">
       <div>
@@ -99,56 +103,79 @@ export default function ProjectSettingsPage(): React.JSX.Element {
                 <dt className="text-muted-foreground">Description</dt>
                 <dd>{project?.description ?? 'No description.'}</dd>
               </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-muted-foreground">Your role</dt>
+                <dd>
+                  {project?.role ? (
+                    <Badge variant={project.role === 'owner' ? 'default' : 'secondary'}>
+                      {project.role}
+                    </Badge>
+                  ) : (
+                    'Unknown'
+                  )}
+                </dd>
+              </div>
             </dl>
           )}
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/30">
-        <CardHeader>
-          <CardTitle>Danger zone</CardTitle>
-          <CardDescription>
-            Deleting a project permanently removes its documents, conversations, and reports. This
-            cannot be undone.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button type="button" variant="destructive">
-                Delete project
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete this project?</DialogTitle>
-                <DialogDescription>
-                  All of its documents and generated content will be permanently deleted. This
-                  action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <Alert variant="warning">
-                This will permanently delete <strong>{project?.title}</strong>.
-              </Alert>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                </DialogClose>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={isDeleting}
-                  onClick={handleDelete}
-                >
-                  {isDeleting ? 'Deleting…' : 'Delete permanently'}
+      <MembersPanel projectId={params.id} role={project?.role ?? null} />
+
+      {project !== null && !isOwner ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Deleting this project</CardTitle>
+            <CardDescription>Only the project owner can delete this workspace.</CardDescription>
+          </CardHeader>
+        </Card>
+      ) : (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Danger zone</CardTitle>
+            <CardDescription>
+              Deleting a project permanently removes its documents, conversations, and reports. This
+              cannot be undone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button type="button" variant="destructive" disabled={isLoading}>
+                  Delete project
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete this project?</DialogTitle>
+                  <DialogDescription>
+                    All of its documents and generated content will be permanently deleted. This
+                    action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <Alert variant="warning">
+                  This will permanently delete <strong>{project?.title}</strong>.
+                </Alert>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={isDeleting}
+                    onClick={handleDelete}
+                  >
+                    {isDeleting ? 'Deleting…' : 'Delete permanently'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

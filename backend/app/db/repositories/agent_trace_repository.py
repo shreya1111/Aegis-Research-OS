@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.agent_trace import AgentTrace
@@ -63,6 +63,43 @@ class AgentTraceRepository:
         )
         result = await self._session.execute(statement)
         return list(result.scalars().all())
+
+    async def summarize_for_project(self, *, project_id: UUID) -> tuple[int, int, int, float]:
+        """Aggregate a project's spend for the usage dashboard (Phase 10, FR-H9).
+
+        Returns ``(run_count, trace_count, tokens_used, estimated_cost)``.
+        ``run_count`` counts distinct ``run_id``s — one per answered question or
+        agent run — which is the "query count" the dashboard reports. The
+        aggregation runs in SQL against the ``(project_id, run_id)`` index so a
+        large trace table never has to be loaded to show a total.
+        """
+        statement = select(
+            func.count(func.distinct(AgentTrace.run_id)),
+            func.count(),
+            func.coalesce(func.sum(AgentTrace.tokens_used), 0),
+            func.coalesce(func.sum(AgentTrace.estimated_cost), 0.0),
+        ).where(AgentTrace.project_id == project_id)
+        result = await self._session.execute(statement)
+        runs, traces, tokens, cost = result.one()
+        return int(runs), int(traces), int(tokens), float(cost)
+
+    async def usage_by_agent(
+        self, *, project_id: UUID
+    ) -> list[tuple[str, int, int, float]]:
+        """Per-agent ``(agent_name, trace_count, tokens, cost)`` for one project."""
+        statement = (
+            select(
+                AgentTrace.agent_name,
+                func.count(),
+                func.coalesce(func.sum(AgentTrace.tokens_used), 0),
+                func.coalesce(func.sum(AgentTrace.estimated_cost), 0.0),
+            )
+            .where(AgentTrace.project_id == project_id)
+            .group_by(AgentTrace.agent_name)
+            .order_by(func.sum(AgentTrace.tokens_used).desc())
+        )
+        result = await self._session.execute(statement)
+        return [(row[0], int(row[1]), int(row[2]), float(row[3])) for row in result.all()]
 
     async def attach_message(self, run_id: UUID, message_id: UUID, *, project_id: UUID) -> None:
         """Retroactively link every trace of a run to its finished message

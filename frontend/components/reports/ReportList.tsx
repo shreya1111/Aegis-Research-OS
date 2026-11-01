@@ -19,6 +19,10 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { useToast } from '@/lib/toast/toast-context';
 import type { Report } from '@/types/report';
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 interface ReportListProps {
   reports: Report[];
   isLoading: boolean;
@@ -88,9 +92,9 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
-      notify({ message: `Report exported as ${format.toUpperCase()}`, type: 'success' });
-    } catch (error: any) {
-      notify({ message: error.message || 'Export failed', type: 'error' });
+      notify('success', `Report exported as ${format.toUpperCase()}`);
+    } catch (error: unknown) {
+      notify('error', errorMessage(error, 'Export failed'));
     } finally {
       setExportingId(null);
     }
@@ -105,11 +109,11 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
       const summary = await generateSummary(reportId, token);
       
       // Show summary in alert or modal
-      alert(`Executive Summary:\n\n${summary}`);
-      
-      notify({ message: 'Summary generated successfully', type: 'success' });
-    } catch (error: any) {
-      notify({ message: error.message || 'Summary generation failed', type: 'error' });
+      window.alert(`Executive Summary:\n\n${summary}`);
+
+      notify('success', 'Summary generated successfully');
+    } catch (error: unknown) {
+      notify('error', errorMessage(error, 'Summary generation failed'));
     } finally {
       setGeneratingSummaryId(null);
     }

@@ -28,9 +28,16 @@ class ProjectService:
     async def list_projects(
         self, *, owner_id: UUID, page: int, page_size: int
     ) -> tuple[list[Project], int]:
+        """One page of the projects ``owner_id`` may access.
+
+        Phase 10 widens this from ownership to membership (FR-B2: "lists only
+        projects the caller may access"), so an invited user finds the shared
+        workspace on their dashboard. The parameter keeps its historical name to
+        avoid churning every call site; it is the *caller*, not the owner.
+        """
         offset = (page - 1) * page_size
-        return await self._projects.list_for_owner(
-            owner_id=owner_id, offset=offset, limit=page_size
+        return await self._projects.list_for_member(
+            user_id=owner_id, offset=offset, limit=page_size
         )
 
     async def get_project(self, project_id: UUID, *, owner_id: UUID) -> Project:
@@ -44,6 +51,21 @@ class ProjectService:
             (design §9.3 rule 4, FR-B3).
         """
         project = await self._projects.get_by_id_for_owner(project_id, owner_id=owner_id)
+        if project is None:
+            raise NotFoundError("Project not found.")
+        return project
+
+    async def get_project_for_member(self, project_id: UUID, *, user_id: UUID) -> Project:
+        """Fetch a project the caller may access as owner or invited member.
+
+        Raises
+        ------
+        NotFoundError
+            If the project does not exist, or the caller reaches it through
+            neither ownership nor membership — the cases stay indistinguishable
+            (design §9.3 rule 4, FR-B3).
+        """
+        project = await self._projects.get_by_id_for_member(project_id, user_id=user_id)
         if project is None:
             raise NotFoundError("Project not found.")
         return project

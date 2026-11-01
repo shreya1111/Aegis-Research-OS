@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import logging
+import os
 import re
 import subprocess
 import sys
@@ -16,6 +17,7 @@ from uuid import UUID
 import pandas as pd
 
 from app.core.config import get_settings
+from app.core.errors import ValidationError
 from app.core.llm.provider import LLMProvider, Message
 from app.db.repositories.analytics_repository import AnalyticsRepository
 
@@ -98,7 +100,7 @@ class AnalyticsService:
         except Exception as e:
             logger.error(f"Failed to profile dataset {dataset_id}: {e}")
             await self._repo.mark_dataset_failed(dataset_id, str(e))
-            raise BadRequestException(f"Failed to profile CSV: {e}")
+            raise ValidationError(f"Failed to profile CSV: {e}")
 
     async def analyze_dataset(
         self,
@@ -148,7 +150,7 @@ class AnalyticsService:
         except Exception as e:
             logger.error(f"Failed to analyze dataset: {e}")
             await self._repo.mark_analysis_failed(analysis_id, str(e))
-            raise BadRequestException(f"Analysis failed: {e}")
+            raise ValidationError(f"Analysis failed: {e}")
 
     async def _generate_analysis_code(
         self,
@@ -198,99 +200,152 @@ Dataset profile:
         code: str,
         csv_content: bytes,
     ) -> tuple[dict[str, Any], dict[str, Any] | None]:
-        """Execute analysis code in a sandboxed environment."""
-        # Validate code for safety
+        """Execute generated analysis code in a constrained child process.
+
+        Containment is layered (design FR-H4): static rejection of host-access
+        constructs, an isolated interpreter (``-I``) started in a scratch
+        directory holding only the dataset, a minimum environment, a wall-clock
+        timeout, and — on POSIX — CPU, address-space, file-size and process
+        limits. The static check is defence in depth rather than the security
+        boundary; the process limits contain anything it misses.
+        """
         self._validate_code_safety(code)
 
-        # Create temporary CSV file
-        with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as f:
-            csv_path = f.name
-            f.write(csv_content)
+        with tempfile.TemporaryDirectory(prefix="aegis-analysis-") as work_dir:
+            work_path = Path(work_dir)
+            (work_path / "data.csv").write_bytes(csv_content)
+            (work_path / "mpl").mkdir()
 
-        try:
-            # Prepare execution environment
-            execution_code = f"""
+            execution_code = """
 import pandas as pd
 import numpy as np
 import json
-import sys
-from io import StringIO
 
-# Load data
-df = pd.read_csv('{csv_path}')
+# The dataset is the only file in the child's working directory.
+df = pd.read_csv('data.csv')
 
-# Initialize result containers
-result = {{}}
+result = {}
 chart = None
 
-# User code
-{code}
+""" + code + """
 
-# Output results as JSON
-output = {{
-    'result': result,
-    'chart': chart
-}}
-print(json.dumps(output, default=str))
+print(json.dumps({'result': result, 'chart': chart}, default=str))
 """
-
-            # Execute with timeout and resource limits
-            proc = subprocess.run(
-                [sys.executable, "-c", execution_code],
+            proc = subprocess.run(  # noqa: S603 - fixed argv, isolated interpreter
+                [sys.executable, "-I", "-c", execution_code],
                 capture_output=True,
                 text=True,
-                timeout=30,  # 30 second timeout
-                env={
-                    "PYTHONPATH": "",  # Isolate from user environment
-                },
+                timeout=30,
+                cwd=work_dir,
+                stdin=subprocess.DEVNULL,
+                env=self._sandbox_environment(work_path),
+                preexec_fn=self._child_limits() if os.name == "posix" else None,
+                check=False,
             )
 
-            if proc.returncode != 0:
-                raise BadRequestException(f"Code execution failed: {proc.stderr}")
+        if proc.returncode != 0:
+            # Child stderr may contain paths or dataset fragments; record it
+            # server-side and return a non-revealing message (design §9.5).
+            logger.warning(
+                "analytics.analysis_code_failed",
+                extra={
+                    "event": "analytics.analysis_code_failed",
+                    "returncode": proc.returncode,
+                    "stderr_tail": proc.stderr[-500:] if proc.stderr else "",
+                },
+            )
+            raise ValidationError("The generated analysis could not be executed.")
 
-            # Parse output
+        try:
             output = json.loads(proc.stdout.strip())
-            result_data = output.get("result", {})
-            chart_data = output.get("chart")
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValidationError(
+                "The generated analysis did not return a readable result."
+            ) from exc
 
-            return result_data, chart_data
+        return output.get("result", {}), output.get("chart")
 
-        except subprocess.TimeoutExpired:
-            raise BadRequestException("Analysis timed out (30s limit)")
-        except json.JSONDecodeError as e:
-            raise BadRequestException(f"Failed to parse analysis output: {e}")
-        finally:
-            # Clean up temporary file
-            Path(csv_path).unlink(missing_ok=True)
+    @staticmethod
+    def _sandbox_environment(work_path: Path) -> dict[str, str]:
+        """A minimum environment: no secrets, no Python paths, scratch HOME."""
+        allowed = ("PATH", "SYSTEMROOT", "WINDIR", "COMSPEC", "LANG", "LC_ALL")
+        env = {key: os.environ[key] for key in allowed if key in os.environ}
+        env.update(
+            {
+                "HOME": str(work_path),
+                "TMPDIR": str(work_path),
+                "TEMP": str(work_path),
+                "TMP": str(work_path),
+                "MPLCONFIGDIR": str(work_path / "mpl"),
+                "PYTHONNOUSERSITE": "1",
+                "PYTHONDONTWRITEBYTECODE": "1",
+            }
+        )
+        return env
+
+    @staticmethod
+    def _child_limits() -> Any:
+        """Build a POSIX ``preexec_fn`` that caps the child's resources."""
+
+        def limit() -> None:  # pragma: no cover - runs in the forked child
+            import resource
+
+            resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+            resource.setrlimit(resource.RLIMIT_AS, (1_073_741_824, 1_073_741_824))
+            resource.setrlimit(resource.RLIMIT_FSIZE, (16 * 1024 * 1024, 16 * 1024 * 1024))
+            resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
+
+        return limit
+
+    #: Modules generated code may import. Everything else is host access, not
+    #: analysis: pandas/numpy are preloaded, so imports are rarely needed.
+    _ALLOWED_IMPORT_ROOTS = frozenset(
+        {"pandas", "numpy", "matplotlib", "seaborn", "json", "math", "statistics", "datetime"}
+    )
+
+    _FORBIDDEN_CODE_PATTERNS: tuple[tuple[str, str], ...] = (
+        (r"__", "dunder access"),
+        (
+            r"\b(?:eval|exec|compile|getattr|setattr|delattr|globals|locals|vars|input|breakpoint|open)\s*\(",
+            "dynamic execution or file access",
+        ),
+        (
+            r"\b(?:os|sys|subprocess|socket|requests|urllib|http|ftplib|smtplib|ctypes|"
+            r"importlib|pickle|shutil|pathlib|glob|tempfile|builtins|multiprocessing)\b",
+            "host or network access",
+        ),
+        (
+            r"\.(?:read_[a-z_]+|to_(?:csv|pickle|excel|sql|parquet|html|xml|clipboard))\s*\(",
+            "file access",
+        ),
+        (r"\bwhile\s+(?:True|1)\s*:", "unbounded loop"),
+    )
 
     def _validate_code_safety(self, code: str) -> None:
-        """Validate that code doesn't contain dangerous operations."""
-        dangerous_patterns = [
-            r"\bopen\s*\(",  # File operations
-            r"\bexec\s*\(",  # Code execution
-            r"\beval\s*\(",  # Code evaluation
-            r"\b__import__\s*\(",  # Dynamic imports
-            r"\bos\.",  # OS operations
-            r"\bsys\.",  # System operations (except sys used in our wrapper)
-            r"\bsubprocess\.",  # Subprocess
-            r"\bsocket\.",  # Network
-            r"\brequests\.",  # HTTP requests
-            r"\burllib",  # HTTP requests
-            r"\bpickle\.",  # Pickle can execute code
-            r"\bshutil\.",  # File operations
-            r"\bglob\.",  # File system
-            r"\bpathlib\.",  # File system (except safe Path usage)
-        ]
-
-        for pattern in dangerous_patterns:
+        """Reject code that reaches outside the analysis sandbox (design FR-H4)."""
+        for pattern, reason in self._FORBIDDEN_CODE_PATTERNS:
             if re.search(pattern, code, re.IGNORECASE):
-                raise BadRequestException(
-                    f"Code contains potentially dangerous operation: {pattern}"
+                logger.warning(
+                    "analytics.analysis_code_rejected",
+                    extra={"event": "analytics.analysis_code_rejected", "reason": reason},
+                )
+                raise ValidationError(
+                    "The generated analysis code contains a disallowed operation."
                 )
 
-        # Check for infinite loops (basic detection)
-        if re.search(r"\bwhile\s+True\s*:", code):
-            raise BadRequestException("Infinite loops are not allowed")
+        for line in code.splitlines():
+            stripped = line.strip()
+            modules: list[str] = []
+            if stripped.startswith("import "):
+                modules = [part.split(" as ")[0].strip() for part in stripped[7:].split(",")]
+            elif stripped.startswith("from "):
+                modules = [stripped[5:].split(" import ")[0].strip()]
+
+            for module in modules:
+                if module.split(".")[0] not in self._ALLOWED_IMPORT_ROOTS:
+                    raise ValidationError(
+                        "The generated analysis code imports a disallowed module."
+                    )
 
     async def _generate_explanation(
         self,

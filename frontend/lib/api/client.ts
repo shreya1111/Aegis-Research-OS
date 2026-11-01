@@ -53,7 +53,9 @@ function buildHeaders(options: RequestOptions): Headers {
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
 
-  if (options.body !== undefined) {
+  // FormData must set its own multipart boundary; only JSON bodies are typed
+  // explicitly here.
+  if (options.body !== undefined && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
   if (options.token) {
@@ -95,7 +97,8 @@ export async function apiRequest<TData>(
     response = await fetch(buildUrl(path, versioned, baseUrl), {
       ...init,
       headers: buildHeaders(options),
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body:
+        body === undefined || body instanceof FormData ? body : JSON.stringify(body),
     });
   } catch {
     throw new ApiError({

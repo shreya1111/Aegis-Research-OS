@@ -9,11 +9,21 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 
-from app.api.deps import CurrentUserDep, DbSessionDep, LLMProviderDep
-from app.api.v1.deps import ProjectInScopeDep
+from app.api.deps import (
+    CurrentUserDep,
+    DbSessionDep,
+    LLMProviderDep,
+    MembershipServiceDep,
+    ProjectServiceDep,
+    SettingsDep,
+)
+from app.api.v1.deps import ProjectEditorDep, ProjectInScopeDep, resolve_project_access
 from app.core.config import get_settings
 from app.core.envelope import ok
-from app.core.llm.registry import get_llm_provider
+from app.core.errors import FileTooLargeError, NotFoundError, PermissionDeniedError
+from app.db.models.analytics import AnalyticsDataset
+from app.db.models.project_member import ProjectRole
+from app.db.models.user import User
 from app.db.repositories.analytics_repository import AnalyticsRepository
 from app.schemas.analytics import (
     AnalyticsAnalysisCreate,
@@ -22,6 +32,9 @@ from app.schemas.analytics import (
 )
 from app.schemas.common import ApiResponse
 from app.services.analytics_service import AnalyticsService
+from app.services.ingestion.validation import sanitise_filename
+from app.services.membership_service import MembershipService
+from app.services.project_service import ProjectService
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +73,39 @@ AnalyticsRepositoryDep = Annotated[AnalyticsRepository, Depends(get_analytics_re
 AnalyticsServiceDep = Annotated[AnalyticsService, Depends(get_analytics_service)]
 
 
+async def _authorised_dataset(
+    dataset_id: UUID,
+    *,
+    repo: AnalyticsRepository,
+    current_user: User,
+    project_service: ProjectService,
+    membership_service: MembershipService,
+    minimum: ProjectRole = ProjectRole.VIEWER,
+) -> AnalyticsDataset:
+    """Load a dataset and authorise the caller through its project.
+
+    Dataset-scoped routes cannot use the ``{project_id}`` dependency because the
+    path carries the dataset id only. Authorising here — through the dataset's
+    own ``project_id`` — keeps membership rules in one place and makes a foreign
+    dataset indistinguishable from a missing one (design §9.3 rule 4).
+    """
+    dataset = await repo.get_dataset(dataset_id)
+    if dataset is None:
+        raise NotFoundError("Dataset not found.")
+
+    context = await resolve_project_access(
+        dataset.project_id,
+        user_id=current_user.id,
+        project_service=project_service,
+        membership_service=membership_service,
+    )
+    if not context.role.at_least(minimum):
+        raise PermissionDeniedError(
+            f"This action requires the {minimum.value} role on this project."
+        )
+    return dataset
+
+
 @router.post(
     "/projects/{project_id}/analytics/datasets",
     response_model=ApiResponse[AnalyticsDatasetRead],
@@ -67,23 +113,30 @@ AnalyticsServiceDep = Annotated[AnalyticsService, Depends(get_analytics_service)
     summary="Upload a CSV dataset for analysis",
 )
 async def upload_dataset(
-    project: ProjectInScopeDep,
+    project: ProjectEditorDep,
     background_tasks: BackgroundTasks,
     session: DbSessionDep,
     repo: AnalyticsRepositoryDep,
     analytics_service: AnalyticsServiceDep,
+    settings: SettingsDep,
     file: UploadedFile,
 ) -> ApiResponse[AnalyticsDatasetRead]:
     """Upload a CSV file for analysis."""
-    # Validate file type
-    if not file.filename or not file.filename.endswith('.csv'):
+    # Validate file type. Browsers may report a mixed-case extension, and the
+    # filename also ends up in the UI, so strip any directory component.
+    filename = sanitise_filename(file.filename or "")
+    if not filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only CSV files are supported"
         )
 
-    # Read content
-    content = await file.read()
+    # Read at most one byte past the limit: an oversized upload is detected
+    # without buffering the whole file in memory first (design §9.5).
+    content = await file.read(settings.max_upload_bytes + 1)
+    if len(content) > settings.max_upload_bytes:
+        max_mb = settings.max_upload_bytes // (1024 * 1024)
+        raise FileTooLargeError(f"Files must be {max_mb} MB or smaller.")
     if len(content) == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -98,7 +151,7 @@ async def upload_dataset(
     # Create dataset record
     dataset = await repo.create_dataset(
         project_id=project.id,
-        filename=file.filename,
+        filename=filename,
         file_path=str(file_path),
     )
 
@@ -138,14 +191,17 @@ async def get_dataset(
     dataset_id: UUID,
     current_user: CurrentUserDep,
     repo: AnalyticsRepositoryDep,
+    project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[AnalyticsDatasetRead]:
     """Get dataset details including profile."""
-    dataset = await repo.get_dataset(dataset_id)
-    if dataset is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found"
-        )
+    dataset = await _authorised_dataset(
+        dataset_id,
+        repo=repo,
+        current_user=current_user,
+        project_service=project_service,
+        membership_service=membership_service,
+    )
     return ok(AnalyticsDatasetRead.from_model(dataset))
 
 
@@ -163,15 +219,18 @@ async def analyze_dataset(
     session: DbSessionDep,
     repo: AnalyticsRepositoryDep,
     analytics_service: AnalyticsServiceDep,
+    project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[AnalyticsAnalysisRead]:
     """Ask a natural-language question about the dataset."""
-    # Get dataset
-    dataset = await repo.get_dataset(dataset_id)
-    if dataset is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found"
-        )
+    dataset = await _authorised_dataset(
+        dataset_id,
+        repo=repo,
+        current_user=current_user,
+        project_service=project_service,
+        membership_service=membership_service,
+        minimum=ProjectRole.EDITOR,
+    )
 
     # Create analysis record
     analysis = await repo.create_analysis(
@@ -206,8 +265,17 @@ async def list_analyses(
     dataset_id: UUID,
     current_user: CurrentUserDep,
     repo: AnalyticsRepositoryDep,
+    project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[list[AnalyticsAnalysisRead]]:
     """List all analyses for a dataset."""
+    await _authorised_dataset(
+        dataset_id,
+        repo=repo,
+        current_user=current_user,
+        project_service=project_service,
+        membership_service=membership_service,
+    )
     analyses = await repo.list_analyses(dataset_id)
     return ok([AnalyticsAnalysisRead.from_model(a) for a in analyses])
 
@@ -221,14 +289,19 @@ async def get_analysis(
     analysis_id: UUID,
     current_user: CurrentUserDep,
     repo: AnalyticsRepositoryDep,
+    project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[AnalyticsAnalysisRead]:
     """Get analysis results including code, data, and explanation."""
     analysis = await repo.get_analysis(analysis_id)
     if analysis is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Analysis not found"
-        )
+        raise NotFoundError("Analysis not found.")
+    await resolve_project_access(
+        analysis.project_id,
+        user_id=current_user.id,
+        project_service=project_service,
+        membership_service=membership_service,
+    )
     return ok(AnalyticsAnalysisRead.from_model(analysis))
 
 
@@ -241,20 +314,24 @@ async def delete_dataset(
     dataset_id: UUID,
     current_user: CurrentUserDep,
     repo: AnalyticsRepositoryDep,
+    project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[None]:
     """Delete a dataset and all its analyses."""
-    dataset = await repo.get_dataset(dataset_id)
-    if dataset is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found"
-        )
+    dataset = await _authorised_dataset(
+        dataset_id,
+        repo=repo,
+        current_user=current_user,
+        project_service=project_service,
+        membership_service=membership_service,
+        minimum=ProjectRole.EDITOR,
+    )
     await repo.delete_dataset(dataset_id, project_id=dataset.project_id)
-    
+
     # Delete file
     try:
         Path(dataset.file_path).unlink(missing_ok=True)
     except Exception as e:
         logger.error(f"Failed to delete dataset file: {e}")
-    
+
     return ok(None)

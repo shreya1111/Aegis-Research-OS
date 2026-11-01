@@ -71,6 +71,18 @@ class DocumentRepository:
         result = await self._session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_by_id(self, document_id: UUID) -> Document | None:
+        """Fetch a document by id alone.
+
+        Only for routes that authorise the document's project *after* loading it
+        (``/documents/{id}``). Project-scoped routes must use
+        :meth:`get_by_id_for_project` so the tenancy predicate stays in the SQL.
+        """
+        result = await self._session.execute(
+            select(Document).where(Document.id == document_id)
+        )
+        return result.scalar_one_or_none()
+
     async def list_for_project(self, *, project_id: UUID) -> list[Document]:
         """Return every document in a project, most recently uploaded first."""
         statement = (

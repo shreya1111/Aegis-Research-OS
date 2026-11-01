@@ -64,11 +64,73 @@ export interface AccessToken {
   token_type: string;
 }
 
+export const PROJECT_ROLES = ['viewer', 'editor', 'owner'] as const;
+
+/** Ordered by capability — an owner may do anything an editor may (design §2.2). */
+export type ProjectRole = (typeof PROJECT_ROLES)[number];
+
 export interface Project {
   id: string;
   title: string;
   description: string | null;
   created_at: string;
+  /** The caller's role in this project; absent on responses that predate it. */
+  role: ProjectRole | null;
+}
+
+/** design §2.2 — one member of a project. ``id`` is null for the owner, who has
+ * no membership row and therefore cannot be edited or removed. */
+export interface ProjectMember {
+  id: string | null;
+  user_id: string;
+  email: string;
+  name: string;
+  role: ProjectRole;
+  invited_at: string;
+}
+
+/** Phase 10 audit-trail entry. Only a summary is stored, never content. */
+export interface ActivityEntry {
+  id: string;
+  user_id: string | null;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  context: Record<string, unknown> | null;
+  created_at: string;
+  actor_name: string | null;
+}
+
+export interface AgentUsage {
+  agent_name: string;
+  trace_count: number;
+  tokens_used: number;
+  estimated_cost: number;
+}
+
+export interface ProjectUsage {
+  run_count: number;
+  trace_count: number;
+  tokens_used: number;
+  estimated_cost: number;
+  by_agent: AgentUsage[];
+}
+
+/** FR-H8 — one in-app notification for the signed-in user. */
+export interface NotificationItem {
+  id: string;
+  project_id: string | null;
+  type: string;
+  title: string;
+  message: string;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+}
+
+export interface NotificationInbox {
+  items: NotificationItem[];
+  unread: number;
 }
 
 export const DOCUMENT_STATUSES = ['pending', 'processing', 'ready', 'failed'] as const;

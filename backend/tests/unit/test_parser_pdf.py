@@ -8,6 +8,7 @@ exercise the OCR path end to end against the installed Tesseract binary.
 from __future__ import annotations
 
 import io
+import shutil
 
 import fitz
 import pytest
@@ -15,6 +16,13 @@ from PIL import Image, ImageDraw
 
 from app.services.ingestion.errors import ExtractionError
 from app.services.ingestion.parsers.pdf import parse_pdf
+
+#: The OCR path shells out to the Tesseract binary, which is installed in
+#: ``deployment/Dockerfile.backend`` but is not guaranteed on a bare host.
+requires_tesseract = pytest.mark.skipif(
+    shutil.which("tesseract") is None,
+    reason="Tesseract OCR binary is not installed on this machine",
+)
 
 
 def _digital_pdf_bytes(*, pages: list[str], title: str | None = None) -> bytes:
@@ -70,12 +78,14 @@ class TestParsePdf:
         extracted = parse_pdf(pdf, ocr_enabled=True, ocr_trigger_char_threshold=20)
         assert extracted.title == "My Paper"
 
+    @requires_tesseract
     def test_scanned_page_falls_back_to_ocr(self) -> None:
         pdf = _scanned_pdf_bytes("SCANNED DOCUMENT TEXT")
         extracted = parse_pdf(pdf, ocr_enabled=True, ocr_trigger_char_threshold=20)
         assert extracted.used_ocr is True
         assert extracted.pages[0].ocr_confidence is not None
 
+    @requires_tesseract
     def test_ocr_recovers_recognisable_text(self) -> None:
         pdf = _scanned_pdf_bytes("HELLO OCR WORLD")
         extracted = parse_pdf(pdf, ocr_enabled=True, ocr_trigger_char_threshold=20)

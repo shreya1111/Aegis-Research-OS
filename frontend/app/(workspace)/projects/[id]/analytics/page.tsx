@@ -7,7 +7,6 @@ import { ApiError } from '@/lib/api/client';
 import {
   analyzeDataset,
   deleteDataset,
-  getDataset,
   listAnalyses,
   listDatasets,
   uploadDataset,
@@ -113,7 +112,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
     if (!file) return;
 
     if (!file.name.endsWith('.csv')) {
-      notify({ message: 'Please upload a CSV file', type: 'error' });
+      notify('error', 'Please upload a CSV file');
       return;
     }
 
@@ -124,12 +123,12 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
         throw new Error('Not authenticated');
       }
       await uploadDataset(projectId, file, token);
-      notify({ message: 'Dataset uploaded successfully', type: 'success' });
+      notify('success', 'Dataset uploaded successfully');
       await fetchDatasets('refresh');
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'Failed to upload dataset';
-      notify({ message, type: 'error' });
+      notify('error', message);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -148,7 +147,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
         throw new Error('Not authenticated');
       }
       await deleteDataset(datasetId, token);
-      notify({ message: 'Dataset deleted', type: 'success' });
+      notify('success', 'Dataset deleted');
       if (selectedDataset?.id === datasetId) {
         setSelectedDataset(null);
         setAnalyses([]);
@@ -157,7 +156,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'Failed to delete dataset';
-      notify({ message, type: 'error' });
+      notify('error', message);
     } finally {
       setDeletingId(null);
     }
@@ -173,14 +172,13 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
         throw new Error('Not authenticated');
       }
       await analyzeDataset(selectedDataset.id, question.trim(), token);
-      notify({ message: 'Analysis started', type: 'success' });
+      notify('success', 'Analysis started');
       setQuestion('');
       // Poll for results
       setTimeout(() => fetchAnalyses(selectedDataset.id), 2000);
     } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Analysis failed';
-      notify({ message, type: 'error' });
+      const message = error instanceof ApiError ? error.message : 'Analysis failed';
+      notify('error', message);
     } finally {
       setIsAnalyzing(false);
     }
@@ -198,7 +196,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
   if (loadState === 'error') {
     return (
       <div className="p-6">
-        <Alert type="error">
+        <Alert variant="destructive">
           Failed to load analytics. Please refresh the page.
         </Alert>
       </div>
@@ -229,7 +227,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
 
         {datasets.length === 0 ? (
           <EmptyState
-            message="No datasets yet"
+            title="No datasets yet"
             description="Upload a CSV file to get started"
           />
         ) : (
@@ -275,18 +273,22 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
       {/* Right panel: Dataset details and analysis */}
       <div className="flex-1 p-6 overflow-y-auto">
         {!selectedDataset ? (
-          <EmptyState message="Select a dataset to view details and run analyses" />
+          <EmptyState
+            title="Select a dataset"
+            description="Choose a dataset on the left to view its profile and run analyses."
+          />
         ) : (
           <div className="space-y-6">
             {/* Dataset profile */}
             <div>
               <h3 className="text-lg font-semibold mb-2">Dataset Profile</h3>
               {selectedDataset.status === 'pending' && (
-                <Alert type="info">Profiling dataset...</Alert>
+                <Alert variant="info">Profiling dataset...</Alert>
               )}
               {selectedDataset.status === 'failed' && (
-                <Alert type="error">
-                  Profiling failed: {selectedDataset.profile_data?.error || 'Unknown error'}
+                <Alert variant="destructive">
+                  Profiling failed:{' '}
+                  {String(selectedDataset.profile_data?.error ?? 'Unknown error')}
                 </Alert>
               )}
               {selectedDataset.status === 'profiled' && selectedDataset.profile_data && (
@@ -305,19 +307,22 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                     <div className="mt-4">
                       <p className="text-sm font-medium mb-2">Columns:</p>
                       <div className="space-y-1 max-h-48 overflow-y-auto">
-                        {Object.entries(selectedDataset.profile_data.columns).map(
-                          ([name, info]: [string, any]) => (
-                            <div
-                              key={name}
-                              className="text-xs flex items-center justify-between py-1 px-2 bg-white dark:bg-neutral-800 rounded"
-                            >
-                              <span className="font-mono">{name}</span>
-                              <span className="text-neutral-600 dark:text-neutral-400">
-                                {info.dtype}
-                              </span>
-                            </div>
-                          )
-                        )}
+                        {Object.entries(
+                          selectedDataset.profile_data.columns as Record<
+                            string,
+                            { dtype?: string }
+                          >,
+                        ).map(([name, info]) => (
+                          <div
+                            key={name}
+                            className="text-xs flex items-center justify-between py-1 px-2 bg-white dark:bg-neutral-800 rounded"
+                          >
+                            <span className="font-mono">{name}</span>
+                            <span className="text-neutral-600 dark:text-neutral-400">
+                              {info.dtype}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -353,7 +358,10 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
             <div>
               <h3 className="text-lg font-semibold mb-2">Analyses</h3>
               {analyses.length === 0 ? (
-                <EmptyState message="No analyses yet" description="Ask a question to get started" />
+                <EmptyState
+                  title="No analyses yet"
+                  description="Ask a question to get started"
+                />
               ) : (
                 <div className="space-y-4">
                   {analyses.map((analysis) => (
@@ -369,11 +377,11 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                       </div>
 
                       {analysis.status === 'pending' && (
-                        <Alert type="info">Running analysis...</Alert>
+                        <Alert variant="info">Running analysis...</Alert>
                       )}
 
                       {analysis.status === 'failed' && (
-                        <Alert type="error">
+                        <Alert variant="destructive">
                           {analysis.error_message || 'Analysis failed'}
                         </Alert>
                       )}

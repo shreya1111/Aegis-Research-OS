@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String, Text
@@ -9,6 +10,9 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import Base, CreatedAtMixin, UUIDPrimaryKeyMixin
+
+if TYPE_CHECKING:
+    from app.db.models.project import Project
 
 
 class AnalyticsDataset(Base, UUIDPrimaryKeyMixin, CreatedAtMixin):

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
 import { config } from '@/lib/config';
 
+import { NotificationsMenu } from '@/components/collaboration/NotificationsMenu';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
@@ -25,6 +26,7 @@ export function TopBar(): React.JSX.Element {
         {config.appName}
       </Link>
       <div className="flex items-center gap-3">
+        {user && <NotificationsMenu />}
         <ThemeToggle />
         {user && (
           <div className="flex items-center gap-3">

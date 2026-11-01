@@ -1,13 +1,13 @@
 /**
  * Analytics API client for Phase 8 (CSV upload, profiling, AI analysis).
+ *
+ * Uses the shared `apiRequest` helper so envelope handling and `ApiError`
+ * mapping stay in one place (design §6.1).
  */
 
-import type {
-  AnalyticsAnalysis,
-  AnalyticsDataset,
-  ApiResponse,
-} from '@/types/api';
-import { apiClient } from './client';
+import type { AnalyticsAnalysis, AnalyticsDataset } from '@/types/api';
+
+import { apiRequest } from './client';
 
 /**
  * Upload a CSV dataset for analysis.
@@ -15,27 +15,16 @@ import { apiClient } from './client';
 export async function uploadDataset(
   projectId: string,
   file: File,
-  token: string
+  token: string,
 ): Promise<AnalyticsDataset> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await apiClient.post<ApiResponse<AnalyticsDataset>>(
-    `/projects/${projectId}/analytics/datasets`,
-    formData,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Don't set Content-Type; browser will set it with boundary
-      },
-    }
-  );
-
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error?.message || 'Upload failed');
-  }
-
-  return response.data.data;
+  return await apiRequest<AnalyticsDataset>(`/projects/${projectId}/analytics/datasets`, {
+    method: 'POST',
+    body: formData,
+    token,
+  });
 }
 
 /**
@@ -43,20 +32,11 @@ export async function uploadDataset(
  */
 export async function listDatasets(
   projectId: string,
-  token: string
+  token: string,
 ): Promise<AnalyticsDataset[]> {
-  const response = await apiClient.get<ApiResponse<AnalyticsDataset[]>>(
-    `/projects/${projectId}/analytics/datasets`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error?.message || 'Failed to list datasets');
-  }
-
-  return response.data.data;
+  return await apiRequest<AnalyticsDataset[]>(`/projects/${projectId}/analytics/datasets`, {
+    token,
+  });
 }
 
 /**
@@ -64,20 +44,9 @@ export async function listDatasets(
  */
 export async function getDataset(
   datasetId: string,
-  token: string
+  token: string,
 ): Promise<AnalyticsDataset> {
-  const response = await apiClient.get<ApiResponse<AnalyticsDataset>>(
-    `/analytics/datasets/${datasetId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error?.message || 'Failed to get dataset');
-  }
-
-  return response.data.data;
+  return await apiRequest<AnalyticsDataset>(`/analytics/datasets/${datasetId}`, { token });
 }
 
 /**
@@ -86,21 +55,13 @@ export async function getDataset(
 export async function analyzeDataset(
   datasetId: string,
   question: string,
-  token: string
+  token: string,
 ): Promise<AnalyticsAnalysis> {
-  const response = await apiClient.post<ApiResponse<AnalyticsAnalysis>>(
-    `/analytics/datasets/${datasetId}/analyze`,
-    { question },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error?.message || 'Analysis failed');
-  }
-
-  return response.data.data;
+  return await apiRequest<AnalyticsAnalysis>(`/analytics/datasets/${datasetId}/analyze`, {
+    method: 'POST',
+    body: { question },
+    token,
+  });
 }
 
 /**
@@ -108,20 +69,11 @@ export async function analyzeDataset(
  */
 export async function listAnalyses(
   datasetId: string,
-  token: string
+  token: string,
 ): Promise<AnalyticsAnalysis[]> {
-  const response = await apiClient.get<ApiResponse<AnalyticsAnalysis[]>>(
-    `/analytics/datasets/${datasetId}/analyses`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error?.message || 'Failed to list analyses');
-  }
-
-  return response.data.data;
+  return await apiRequest<AnalyticsAnalysis[]>(`/analytics/datasets/${datasetId}/analyses`, {
+    token,
+  });
 }
 
 /**
@@ -129,37 +81,17 @@ export async function listAnalyses(
  */
 export async function getAnalysis(
   analysisId: string,
-  token: string
+  token: string,
 ): Promise<AnalyticsAnalysis> {
-  const response = await apiClient.get<ApiResponse<AnalyticsAnalysis>>(
-    `/analytics/analyses/${analysisId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error?.message || 'Failed to get analysis');
-  }
-
-  return response.data.data;
+  return await apiRequest<AnalyticsAnalysis>(`/analytics/analyses/${analysisId}`, { token });
 }
 
 /**
  * Delete a dataset and all its analyses.
  */
-export async function deleteDataset(
-  datasetId: string,
-  token: string
-): Promise<void> {
-  const response = await apiClient.delete<ApiResponse<null>>(
-    `/analytics/datasets/${datasetId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.data.success) {
-    throw new Error(response.data.error?.message || 'Delete failed');
-  }
+export async function deleteDataset(datasetId: string, token: string): Promise<void> {
+  await apiRequest<null>(`/analytics/datasets/${datasetId}`, {
+    method: 'DELETE',
+    token,
+  });
 }

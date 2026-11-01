@@ -6,9 +6,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import CurrentUserDep, ProjectServiceDep
-from app.api.v1.deps import ProjectInScopeDep
+from app.api.deps import CurrentUserDep, MembershipServiceDep, ProjectServiceDep
+from app.api.v1.deps import ProjectContextDep, ProjectOwnerDep
 from app.core.envelope import ok, paginated
+from app.db.models.project_member import ProjectRole
 from app.schemas.common import ApiResponse, Page, PaginationParams
 from app.schemas.project import ProjectCreate, ProjectRead
 
@@ -35,26 +36,34 @@ async def create_project(
         title=payload.title,
         description=payload.description,
     )
-    return ok(ProjectRead.model_validate(project))
+    # The creator is always the owner, so the role is known without a lookup.
+    return ok(ProjectRead.from_model(project, ProjectRole.OWNER))
 
 
 @router.get(
     "",
     response_model=ApiResponse[Page[ProjectRead]],
-    summary="List the caller's research workspaces",
+    summary="List the research workspaces the caller may access",
 )
 async def list_projects(
     pagination: PaginationQuery,
     current_user: CurrentUserDep,
     project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[Page[ProjectRead]]:
     projects, total = await project_service.list_projects(
         owner_id=current_user.id,
         page=pagination.page,
         page_size=pagination.page_size,
     )
+    # One query resolves roles for the whole page, so the dashboard can render
+    # shared projects differently from owned ones without an N+1 lookup.
+    roles = await membership_service.roles_for(projects, user_id=current_user.id)
+    items = [
+        ProjectRead.from_model(project, roles.get(project.id)) for project in projects
+    ]
     return paginated(
-        [ProjectRead.model_validate(project) for project in projects],
+        items,
         total=total,
         page=pagination.page,
         page_size=pagination.page_size,
@@ -66,8 +75,8 @@ async def list_projects(
     response_model=ApiResponse[ProjectRead],
     summary="Get a research workspace",
 )
-async def get_project(project: ProjectInScopeDep) -> ApiResponse[ProjectRead]:
-    return ok(ProjectRead.model_validate(project))
+async def get_project(context: ProjectContextDep) -> ApiResponse[ProjectRead]:
+    return ok(ProjectRead.from_model(context.project, context.role))
 
 
 @router.delete(
@@ -76,9 +85,10 @@ async def get_project(project: ProjectInScopeDep) -> ApiResponse[ProjectRead]:
     summary="Delete a research workspace and all its content",
 )
 async def delete_project(
-    project: ProjectInScopeDep,
-    current_user: CurrentUserDep,
+    project: ProjectOwnerDep,
     project_service: ProjectServiceDep,
 ) -> ApiResponse[None]:
-    await project_service.delete_project(project.id, owner_id=current_user.id)
+    """Delete a project. Owner-only: sharing a project does not grant the right
+    to destroy it, and the cascade takes every collaborator's content with it."""
+    await project_service.delete_project(project.id, owner_id=project.owner_id)
     return ok(None)

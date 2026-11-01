@@ -56,14 +56,14 @@ class GraphRepository:
         )
         result = await self._session.execute(stmt)
         existing_node = result.scalar_one_or_none()
-        
+
         if existing_node:
             # Update metadata if provided
             if metadata:
                 existing_node.metadata_.update(metadata)
                 await self._session.commit()
             return existing_node
-        
+
         # Create new node
         return await self.create_node(
             project_id=project_id,
@@ -116,7 +116,7 @@ class GraphRepository:
         )
         result = await self._session.execute(stmt)
         existing_edge = result.scalar_one_or_none()
-        
+
         if existing_edge:
             # Update weight and metadata
             existing_edge.weight = max(existing_edge.weight, weight)
@@ -124,7 +124,7 @@ class GraphRepository:
                 existing_edge.metadata_.update(metadata)
             await self._session.commit()
             return existing_edge
-        
+
         return await self.create_edge(
             project_id=project_id,
             source_node_id=source_node_id,
@@ -135,24 +135,24 @@ class GraphRepository:
         )
 
     async def get_nodes_for_project(
-        self, 
+        self,
         project_id: UUID,
         node_type: NodeType | None = None,
         limit: int = 100
     ) -> list[GraphNode]:
         """Get all nodes for a project, optionally filtered by type."""
         stmt = select(GraphNode).where(GraphNode.project_id == project_id)
-        
+
         if node_type:
             stmt = stmt.where(GraphNode.node_type == node_type)
-        
+
         stmt = stmt.order_by(GraphNode.name).limit(limit)
-        
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_edges_for_project(
-        self, 
+        self,
         project_id: UUID,
         edge_type: EdgeType | None = None,
         limit: int = 200
@@ -166,12 +166,12 @@ class GraphRepository:
             )
             .where(GraphEdge.project_id == project_id)
         )
-        
+
         if edge_type:
             stmt = stmt.where(GraphEdge.edge_type == edge_type)
-        
+
         stmt = stmt.order_by(GraphEdge.weight.desc()).limit(limit)
-        
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -185,8 +185,8 @@ class GraphRepository:
         return result.scalar_one_or_none()
 
     async def get_node_neighbors(
-        self, 
-        node_id: UUID, 
+        self,
+        node_id: UUID,
         project_id: UUID
     ) -> tuple[list[GraphNode], list[GraphEdge]]:
         """Get all neighboring nodes and connecting edges for a given node."""
@@ -199,8 +199,8 @@ class GraphRepository:
                 GraphEdge.project_id == project_id
             )
         )
-        
-        # Get incoming edges  
+
+        # Get incoming edges
         incoming_stmt = (
             select(GraphEdge)
             .options(selectinload(GraphEdge.source_node))
@@ -209,22 +209,22 @@ class GraphRepository:
                 GraphEdge.project_id == project_id
             )
         )
-        
+
         outgoing_result = await self._session.execute(outgoing_stmt)
         incoming_result = await self._session.execute(incoming_stmt)
-        
+
         outgoing_edges = list(outgoing_result.scalars().all())
         incoming_edges = list(incoming_result.scalars().all())
-        
+
         # Collect unique neighboring nodes
         neighbors = set()
         all_edges = outgoing_edges + incoming_edges
-        
+
         for edge in outgoing_edges:
             neighbors.add(edge.target_node)
         for edge in incoming_edges:
             neighbors.add(edge.source_node)
-        
+
         return list(neighbors), all_edges
 
     async def get_graph_stats(self, project_id: UUID) -> dict[str, Any]:
@@ -235,20 +235,20 @@ class GraphRepository:
             .where(GraphNode.project_id == project_id)
             .group_by(GraphNode.node_type)
         )
-        
+
         # Count edges by type
         edge_counts_stmt = (
             select(GraphEdge.edge_type, func.count(GraphEdge.id))
             .where(GraphEdge.project_id == project_id)
             .group_by(GraphEdge.edge_type)
         )
-        
+
         node_result = await self._session.execute(node_counts_stmt)
         edge_result = await self._session.execute(edge_counts_stmt)
-        
+
         node_counts = dict(node_result.all())
         edge_counts = dict(edge_result.all())
-        
+
         return {
             "total_nodes": sum(node_counts.values()),
             "total_edges": sum(edge_counts.values()),
@@ -268,12 +268,12 @@ class GraphRepository:
             GraphNode.project_id == project_id,
             func.lower(GraphNode.name).contains(query.lower())
         )
-        
+
         if node_type:
             stmt = stmt.where(GraphNode.node_type == node_type)
-        
+
         stmt = stmt.order_by(GraphNode.name).limit(limit)
-        
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -285,10 +285,10 @@ class GraphRepository:
         )
         result = await self._session.execute(stmt)
         node = result.scalar_one_or_none()
-        
+
         if not node:
             return False
-        
+
         await self._session.delete(node)
         await self._session.commit()
         return True
@@ -301,10 +301,10 @@ class GraphRepository:
         )
         result = await self._session.execute(stmt)
         edge = result.scalar_one_or_none()
-        
+
         if not edge:
             return False
-        
+
         await self._session.delete(edge)
         await self._session.commit()
         return True

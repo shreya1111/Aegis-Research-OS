@@ -2,25 +2,21 @@
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import re
 from enum import Enum
 
 import markdown
 from docx import Document
-from docx.shared import Inches, Pt, RGBColor
+from docx.shared import Pt, RGBColor
 
 from app.core.errors import ExportError
 from app.db.models.report import Report
 
-# Lazy import WeasyPrint to avoid Windows DLL issues
-_weasyprint_available = False
-try:
-    from weasyprint import HTML
-    _weasyprint_available = True
-except (ImportError, OSError):
-    # WeasyPrint requires system libraries (GTK+, Pango, Cairo) which may not be available on Windows
-    pass
+# Probe for WeasyPrint without importing it: it requires system libraries
+# (GTK+, Pango, Cairo) whose absence raises OSError at import time on Windows.
+_weasyprint_available = importlib.util.find_spec("weasyprint") is not None
 
 
 class ExportFormat(str, Enum):
@@ -120,8 +116,9 @@ class ExportService:
         styled_html = self._create_styled_html(report.title, html_content)
 
         # Convert HTML to PDF
-        from weasyprint import HTML as WPHtml
-        pdf_bytes = WPHtml(string=styled_html).write_pdf()
+        from weasyprint import HTML
+
+        pdf_bytes = HTML(string=styled_html).write_pdf()
 
         filename = self._make_filename(report.title, "pdf")
         return pdf_bytes, filename, "application/pdf"
@@ -133,9 +130,6 @@ class ExportService:
 
         document = Document()
 
-        # Set document styles
-        styles = document.styles
-       
         # Title
         title = document.add_heading(report.title, level=0)
         title.alignment = 1  # Center

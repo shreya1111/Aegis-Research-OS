@@ -34,6 +34,16 @@ class ReportRepository:
         await self._session.flush()
         return report
 
+    async def get_by_id(self, report_id: UUID) -> Report | None:
+        """Fetch a report by id alone.
+
+        Only for routes that authorise the report's project *after* loading it
+        (``/reports/{id}``, which has no project id in the path). Project-scoped
+        routes must use :meth:`get_by_id_for_project` instead.
+        """
+        result = await self._session.execute(select(Report).where(Report.id == report_id))
+        return result.scalar_one_or_none()
+
     async def get_by_id_for_project(self, report_id: UUID, project_id: UUID) -> Report | None:
         """Get a report by ID, scoped to a project."""
         stmt = select(Report).where(Report.id == report_id, Report.project_id == project_id)

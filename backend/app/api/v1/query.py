@@ -5,10 +5,18 @@ from __future__ import annotations
 
 from fastapi import APIRouter, status
 
-from app.api.deps import AgentServiceDep, CurrentUserDep, RagServiceDep, RateLimiterDep, SettingsDep
+from app.api.deps import (
+    ActivityServiceDep,
+    AgentServiceDep,
+    CurrentUserDep,
+    RagServiceDep,
+    RateLimiterDep,
+    SettingsDep,
+)
 from app.api.v1.deps import ProjectInScopeDep
 from app.core.envelope import ok
 from app.core.errors import RateLimitError
+from app.db.models.activity import ActivityAction
 from app.schemas.common import ApiResponse
 from app.schemas.query import QueryRequest, QueryResponse
 from app.services.query_routing import requires_agent_pipeline
@@ -31,6 +39,7 @@ async def run_query(
     current_user: CurrentUserDep,
     rate_limiter: RateLimiterDep,
     settings: SettingsDep,
+    activity_service: ActivityServiceDep,
 ) -> ApiResponse[QueryResponse]:
     # Highest-value rate limit in the system (design §9.6): bounds LLM cost
     # exhaustion, keyed per user rather than per IP since cost is incurred
@@ -53,6 +62,15 @@ async def run_query(
             request=body.question,
             conversation_id=body.conversation_id,
         )
+        # The audit trail records that a question was asked and which path
+        # answered it — never the question text itself (design §6.9).
+        await activity_service.record(
+            project_id=project.id,
+            user_id=current_user.id,
+            action=ActivityAction.QUERY_EXECUTED,
+            entity_type="query",
+            context={"mode": "agent"},
+        )
         return ok(QueryResponse.from_agent_result(result))
 
     filters = None
@@ -68,5 +86,12 @@ async def run_query(
         question=body.question,
         filters=filters,
         conversation_id=body.conversation_id,
+    )
+    await activity_service.record(
+        project_id=project.id,
+        user_id=current_user.id,
+        action=ActivityAction.QUERY_EXECUTED,
+        entity_type="query",
+        context={"mode": "rag"},
     )
     return ok(QueryResponse.from_answer(answer))

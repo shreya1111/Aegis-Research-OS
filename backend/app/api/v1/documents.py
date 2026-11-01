@@ -7,9 +7,19 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, File, UploadFile, status
 
-from app.api.deps import CurrentUserDep, DbSessionDep, DocumentServiceDep
-from app.api.v1.deps import ProjectInScopeDep
+from app.api.deps import (
+    ActivityServiceDep,
+    CurrentUserDep,
+    DbSessionDep,
+    DocumentServiceDep,
+    MembershipServiceDep,
+    ProjectServiceDep,
+)
+from app.api.v1.deps import ProjectEditorDep, ProjectInScopeDep, resolve_project_access
 from app.core.envelope import ok
+from app.core.errors import PermissionDeniedError
+from app.db.models.activity import ActivityAction
+from app.db.models.project_member import ProjectRole
 from app.schemas.common import ApiResponse
 from app.schemas.document import DocumentRead
 from app.services.ingestion.runner import run_ingestion as run_ingestion_pipeline
@@ -26,9 +36,11 @@ UploadedFile = Annotated[UploadFile, File(...)]
     summary="Upload a document for ingestion",
 )
 async def upload_document(
-    project: ProjectInScopeDep,
+    project: ProjectEditorDep,
     background_tasks: BackgroundTasks,
+    current_user: CurrentUserDep,
     document_service: DocumentServiceDep,
+    activity_service: ActivityServiceDep,
     session: DbSessionDep,
     file: UploadedFile,
 ) -> ApiResponse[DocumentRead]:
@@ -39,6 +51,14 @@ async def upload_document(
         filename=file.filename or "upload",
         content_type=file.content_type,
         content=content,
+    )
+    await activity_service.record(
+        project_id=project.id,
+        user_id=current_user.id,
+        action=ActivityAction.DOCUMENT_UPLOADED,
+        entity_type="document",
+        entity_id=document.id,
+        context={"filename": document.filename},
     )
 
     # Commit the pending row before scheduling the background task. Since
@@ -78,8 +98,18 @@ async def get_document(
     document_id: UUID,
     current_user: CurrentUserDep,
     document_service: DocumentServiceDep,
+    project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[DocumentRead]:
-    document = await document_service.get_document_for_owner(document_id, owner_id=current_user.id)
+    document = await document_service.get_document_by_id(document_id)
+    # Authorise through the document's own project so an invited member can poll
+    # status for a document they can see, while a stranger still gets a 404.
+    await resolve_project_access(
+        document.project_id,
+        user_id=current_user.id,
+        project_service=project_service,
+        membership_service=membership_service,
+    )
     return ok(DocumentRead.from_model(document))
 
 
@@ -92,6 +122,28 @@ async def delete_document(
     document_id: UUID,
     current_user: CurrentUserDep,
     document_service: DocumentServiceDep,
+    activity_service: ActivityServiceDep,
+    project_service: ProjectServiceDep,
+    membership_service: MembershipServiceDep,
 ) -> ApiResponse[None]:
-    await document_service.delete_document_for_owner(document_id, owner_id=current_user.id)
+    document = await document_service.get_document_by_id(document_id)
+    context = await resolve_project_access(
+        document.project_id,
+        user_id=current_user.id,
+        project_service=project_service,
+        membership_service=membership_service,
+    )
+    if not context.role.at_least(ProjectRole.EDITOR):
+        raise PermissionDeniedError("This action requires the editor role on this project.")
+
+    filename = document.filename
+    await document_service.delete_document(document.id, project_id=document.project_id)
+    await activity_service.record(
+        project_id=context.project.id,
+        user_id=current_user.id,
+        action=ActivityAction.DOCUMENT_DELETED,
+        entity_type="document",
+        entity_id=document_id,
+        context={"filename": filename},
+    )
     return ok(None)

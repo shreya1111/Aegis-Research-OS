@@ -26,15 +26,19 @@ from app.core.errors import AuthenticationError
 from app.core.llm.provider import LLMProvider
 from app.core.llm.registry import get_llm_provider
 from app.db.models.user import User
+from app.db.repositories.activity_repository import ActivityRepository
 from app.db.repositories.agent_trace_repository import AgentTraceRepository
 from app.db.repositories.conversation_repository import ConversationRepository
 from app.db.repositories.document_chunk_repository import DocumentChunkRepository
 from app.db.repositories.document_repository import DocumentRepository
 from app.db.repositories.message_repository import MessageRepository
+from app.db.repositories.notification_repository import NotificationRepository
+from app.db.repositories.project_member_repository import ProjectMemberRepository
 from app.db.repositories.project_memory_repository import ProjectMemoryRepository
 from app.db.repositories.project_repository import ProjectRepository
 from app.db.repositories.user_repository import UserRepository
 from app.db.session import get_db_session
+from app.services.activity_service import ActivityService
 from app.services.agent_run_status import AgentRunStatusCache
 from app.services.agent_service import AgentService
 from app.services.auth_service import AuthService
@@ -42,11 +46,14 @@ from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService, get_embedding_service
 from app.services.external_sources.cache import ExternalSourceCache
 from app.services.external_sources.external_source_service import ExternalSourceService
+from app.services.membership_service import MembershipService
 from app.services.memory_service import MemoryService
+from app.services.notification_service import NotificationService
 from app.services.project_service import ProjectService
 from app.services.rag_service import RagService
 from app.services.retrieval.reranker import CrossEncoderReranker
 from app.services.retrieval.retrieval_service import RetrievalService
+from app.services.usage_service import UsageService
 
 #: ``auto_error=False`` so a missing token surfaces as our own AuthenticationError
 #: (mapped to the uniform envelope) rather than FastAPI's default 403 payload.
@@ -91,6 +98,18 @@ def get_project_memory_repository(session: DbSessionDep) -> ProjectMemoryReposit
     return ProjectMemoryRepository(session)
 
 
+def get_project_member_repository(session: DbSessionDep) -> ProjectMemberRepository:
+    return ProjectMemberRepository(session)
+
+
+def get_activity_repository(session: DbSessionDep) -> ActivityRepository:
+    return ActivityRepository(session)
+
+
+def get_notification_repository(session: DbSessionDep) -> NotificationRepository:
+    return NotificationRepository(session)
+
+
 UserRepositoryDep = Annotated[UserRepository, Depends(get_user_repository)]
 ProjectRepositoryDep = Annotated[ProjectRepository, Depends(get_project_repository)]
 DocumentRepositoryDep = Annotated[DocumentRepository, Depends(get_document_repository)]
@@ -102,6 +121,13 @@ MessageRepositoryDep = Annotated[MessageRepository, Depends(get_message_reposito
 AgentTraceRepositoryDep = Annotated[AgentTraceRepository, Depends(get_agent_trace_repository)]
 ProjectMemoryRepositoryDep = Annotated[
     ProjectMemoryRepository, Depends(get_project_memory_repository)
+]
+ProjectMemberRepositoryDep = Annotated[
+    ProjectMemberRepository, Depends(get_project_member_repository)
+]
+ActivityRepositoryDep = Annotated[ActivityRepository, Depends(get_activity_repository)]
+NotificationRepositoryDep = Annotated[
+    NotificationRepository, Depends(get_notification_repository)
 ]
 
 
@@ -119,6 +145,29 @@ def get_auth_service(
 
 def get_project_service(project_repository: ProjectRepositoryDep) -> ProjectService:
     return ProjectService(project_repository=project_repository)
+
+
+def get_membership_service(
+    member_repository: ProjectMemberRepositoryDep,
+    user_repository: UserRepositoryDep,
+) -> MembershipService:
+    return MembershipService(
+        member_repository=member_repository, user_repository=user_repository
+    )
+
+
+def get_activity_service(activity_repository: ActivityRepositoryDep) -> ActivityService:
+    return ActivityService(activity_repository=activity_repository)
+
+
+def get_notification_service(
+    notification_repository: NotificationRepositoryDep,
+) -> NotificationService:
+    return NotificationService(notification_repository=notification_repository)
+
+
+def get_usage_service(trace_repository: AgentTraceRepositoryDep) -> UsageService:
+    return UsageService(trace_repository=trace_repository)
 
 
 def get_document_service(
@@ -144,6 +193,10 @@ def get_reranker(settings: SettingsDep) -> CrossEncoderReranker | None:
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
+MembershipServiceDep = Annotated[MembershipService, Depends(get_membership_service)]
+ActivityServiceDep = Annotated[ActivityService, Depends(get_activity_service)]
+NotificationServiceDep = Annotated[NotificationService, Depends(get_notification_service)]
+UsageServiceDep = Annotated[UsageService, Depends(get_usage_service)]
 DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 EmbeddingServiceDep = Annotated[EmbeddingService, Depends(get_embedding_service_dep)]
 LLMProviderDep = Annotated[LLMProvider, Depends(get_llm_provider_dep)]

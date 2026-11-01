@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -101,7 +101,7 @@ async def test_get_nodes_for_project() -> None:
     ]
     
     # Mock query execution
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = mock_nodes
     session.execute.return_value = mock_result
     
@@ -130,7 +130,7 @@ async def test_get_nodes_for_project_with_type_filter() -> None:
         ),
     ]
     
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = mock_nodes
     session.execute.return_value = mock_result
     
@@ -167,7 +167,7 @@ async def test_search_nodes() -> None:
         ),
     ]
     
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = mock_nodes
     session.execute.return_value = mock_result
     
@@ -190,9 +190,9 @@ async def test_get_graph_stats() -> None:
     edge_counts = [(EdgeType.CO_AUTHOR, 4), (EdgeType.TOPIC_MEMBERSHIP, 8)]
     
     # Mock two separate query executions
-    mock_node_result = AsyncMock()
+    mock_node_result = MagicMock()
     mock_node_result.all.return_value = node_counts
-    mock_edge_result = AsyncMock()
+    mock_edge_result = MagicMock()
     mock_edge_result.all.return_value = edge_counts
     
     session.execute.side_effect = [mock_node_result, mock_edge_result]
@@ -238,9 +238,9 @@ async def test_get_node_neighbors() -> None:
     mock_edge.target_node = neighbor_node
     
     # Mock query results - outgoing and incoming edges
-    mock_outgoing_result = AsyncMock()
+    mock_outgoing_result = MagicMock()
     mock_outgoing_result.scalars.return_value.all.return_value = [mock_edge]
-    mock_incoming_result = AsyncMock()
+    mock_incoming_result = MagicMock()
     mock_incoming_result.scalars.return_value.all.return_value = []
     
     session.execute.side_effect = [mock_outgoing_result, mock_incoming_result]
@@ -271,7 +271,7 @@ async def test_delete_node() -> None:
         metadata_={},
     )
     
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_node
     session.execute.return_value = mock_result
     
@@ -295,7 +295,7 @@ async def test_delete_nonexistent_node() -> None:
     project_id = uuid.uuid4()
     
     # Mock node not found
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     session.execute.return_value = mock_result
     

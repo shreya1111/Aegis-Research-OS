@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.project import Project
+from app.db.models.project_member import ProjectMember
 
 
 class ProjectRepository:
@@ -39,6 +40,56 @@ class ProjectRepository:
         )
         result = await self._session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def get_by_id_for_member(self, project_id: UUID, *, user_id: UUID) -> Project | None:
+        """Fetch a project the caller may access, as owner or as a member.
+
+        Phase 10 widens the scope predicate from ownership to membership
+        (design §2.2): the owner is resolved from ``projects.owner_id`` and
+        invited members from ``project_members``. A project the caller can
+        reach through neither path is still returned as ``None``, so the caller
+        maps it to 404 and never discloses existence (design §9.3 rule 4).
+        """
+        statement = select(Project).where(
+            Project.id == project_id,
+            or_(
+                Project.owner_id == user_id,
+                Project.id.in_(
+                    select(ProjectMember.project_id).where(ProjectMember.user_id == user_id)
+                ),
+            ),
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def list_for_member(
+        self, *, user_id: UUID, offset: int, limit: int
+    ) -> tuple[list[Project], int]:
+        """Return one page of the projects a caller may access, newest first.
+
+        The dashboard lists accessible workspaces — owned *and* shared — since
+        an invited user must be able to find the project they were added to
+        (Phase 10 acceptance criterion, FR-B2).
+        """
+        scope = or_(
+            Project.owner_id == user_id,
+            Project.id.in_(
+                select(ProjectMember.project_id).where(ProjectMember.user_id == user_id)
+            ),
+        )
+        items_statement = (
+            select(Project)
+            .where(scope)
+            .order_by(Project.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        count_statement = select(func.count()).select_from(Project).where(scope)
+
+        items_result = await self._session.execute(items_statement)
+        total_result = await self._session.execute(count_statement)
+
+        return list(items_result.scalars().all()), int(total_result.scalar_one())
 
     async def list_for_owner(
         self, *, owner_id: UUID, offset: int, limit: int

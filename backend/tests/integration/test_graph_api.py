@@ -1,37 +1,61 @@
-"""Integration tests for graph API endpoints (Phase 7)."""
+"""Integration tests for graph API endpoints (Phase 7).
+
+Each test registers its own users through the public API and builds the state it
+needs, matching the application-level fixture in :mod:`tests.conftest` (an
+in-process ASGI client against a disposable database schema).
+"""
 
 from __future__ import annotations
 
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
-from app.db.models.graph_edge import EdgeType
-from app.db.models.graph_node import NodeType
+PASSWORD = "correct-horse-battery"
+
+
+async def _register_and_login(client: AsyncClient, *, email: str, name: str = "Test User") -> str:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": PASSWORD, "name": name},
+    )
+    response = await client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
+    return str(response.json()["data"]["access_token"])
+
+
+def _auth(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def _create_project(client: AsyncClient, token: str, title: str = "Graph project") -> str:
+    response = await client.post("/api/v1/projects", json={"title": title}, headers=_auth(token))
+    assert response.status_code == 201
+    return str(response.json()["data"]["id"])
 
 
 @pytest.mark.integration
-async def test_get_graph_data_empty(auth_client: TestClient, test_project_id: str) -> None:
-    """Test getting graph data for a project with no entities."""
-    response = auth_client.get(f"/api/v1/projects/{test_project_id}/graph/data")
-    
+async def test_get_graph_data_empty(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.get(f"/api/v1/projects/{project_id}/graph/data", headers=_auth(token))
+
     assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert data["data"]["nodes"] == []
-    assert data["data"]["edges"] == []
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"] == {"nodes": [], "edges": []}
 
 
 @pytest.mark.integration
-async def test_get_graph_stats_empty(auth_client: TestClient, test_project_id: str) -> None:
-    """Test getting graph statistics for empty graph."""
-    response = auth_client.get(f"/api/v1/projects/{test_project_id}/graph/stats")
-    
+async def test_get_graph_stats_empty(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.get(f"/api/v1/projects/{project_id}/graph/stats", headers=_auth(token))
+
     assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    stats = data["data"]
+    stats = response.json()["data"]
     assert stats["totalNodes"] == 0
     assert stats["totalEdges"] == 0
     assert stats["nodesByType"] == {}
@@ -39,222 +63,227 @@ async def test_get_graph_stats_empty(auth_client: TestClient, test_project_id: s
 
 
 @pytest.mark.integration
-async def test_search_nodes_empty(auth_client: TestClient, test_project_id: str) -> None:
-    """Test searching nodes in empty graph."""
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/search",
-        params={"q": "smith"}
+async def test_search_nodes_empty(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.get(
+        f"/api/v1/projects/{project_id}/graph/search", params={"q": "smith"}, headers=_auth(token)
     )
-    
+
     assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert data["data"] == []
-
-
-@pytest.mark.integration 
-async def test_get_nonexistent_node_details(auth_client: TestClient, test_project_id: str) -> None:
-    """Test getting details for non-existent node."""
-    fake_node_id = str(uuid.uuid4())
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/nodes/{fake_node_id}"
-    )
-    
-    assert response.status_code == 404
-    data = response.json()
-    assert data["success"] is False
-    assert "not found" in data["error"]["message"].lower()
+    assert response.json()["data"] == []
 
 
 @pytest.mark.integration
-async def test_delete_nonexistent_node(auth_client: TestClient, test_project_id: str) -> None:
-    """Test deleting non-existent node."""
-    fake_node_id = str(uuid.uuid4())
-    response = auth_client.delete(
-        f"/api/v1/projects/{test_project_id}/graph/nodes/{fake_node_id}"
+async def test_get_nonexistent_node_details(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.get(
+        f"/api/v1/projects/{project_id}/graph/nodes/{uuid.uuid4()}", headers=_auth(token)
     )
-    
+
     assert response.status_code == 404
-    data = response.json()
-    assert data["success"] is False
+    body = response.json()
+    assert body["success"] is False
+    assert "not found" in body["error"]["message"].lower()
 
 
 @pytest.mark.integration
-async def test_delete_nonexistent_relationship(auth_client: TestClient, test_project_id: str) -> None:
-    """Test deleting non-existent relationship."""
-    fake_edge_id = str(uuid.uuid4())
-    response = auth_client.delete(
-        f"/api/v1/projects/{test_project_id}/graph/relationships/{fake_edge_id}"
+async def test_delete_nonexistent_node(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.delete(
+        f"/api/v1/projects/{project_id}/graph/nodes/{uuid.uuid4()}", headers=_auth(token)
     )
-    
+
     assert response.status_code == 404
-    data = response.json()
-    assert data["success"] is False
+    assert response.json()["success"] is False
 
 
 @pytest.mark.integration
-async def test_graph_rebuild_endpoint(auth_client: TestClient, test_project_id: str) -> None:
-    """Test graph rebuild endpoint."""
-    response = auth_client.post(f"/api/v1/projects/{test_project_id}/graph/rebuild")
-    
+async def test_delete_nonexistent_relationship(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.delete(
+        f"/api/v1/projects/{project_id}/graph/relationships/{uuid.uuid4()}", headers=_auth(token)
+    )
+
+    assert response.status_code == 404
+    assert response.json()["success"] is False
+
+
+@pytest.mark.integration
+async def test_graph_rebuild_endpoint(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.post(f"/api/v1/projects/{project_id}/graph/rebuild", headers=_auth(token))
+
     assert response.status_code == 202
-    data = response.json()
-    assert data["success"] is True
-    assert "queued" in data["data"]["message"].lower()
+    body = response.json()
+    assert body["success"] is True
+    assert "queued" in body["data"]["message"].lower()
 
 
 @pytest.mark.integration
-async def test_graph_data_with_filters(auth_client: TestClient, test_project_id: str) -> None:
-    """Test getting graph data with node/edge type filters."""
-    # Test with node type filter
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/data",
-        params={"nodeType": "author"}
+async def test_graph_data_with_filters(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    for params in (
+        {"nodeType": "author"},
+        {"edgeType": "co_author"},
+        {"nodeType": "author", "edgeType": "co_author"},
+    ):
+        response = await client.get(
+            f"/api/v1/projects/{project_id}/graph/data", params=params, headers=_auth(token)
+        )
+        assert response.status_code == 200
+        assert response.json()["success"] is True
+
+
+@pytest.mark.integration
+async def test_search_with_node_type_filter(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    response = await client.get(
+        f"/api/v1/projects/{project_id}/graph/search",
+        params={"q": "test", "nodeType": "author"},
+        headers=_auth(token),
     )
-    
+
     assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    
-    # Test with edge type filter
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/data", 
-        params={"edgeType": "co_author"}
-    )
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    
-    # Test with both filters
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/data",
-        params={"nodeType": "author", "edgeType": "co_author"}
-    )
-    
-    assert response.status_code == 200
-    data = response.json() 
-    assert data["success"] is True
+    assert response.json()["success"] is True
 
 
 @pytest.mark.integration
-async def test_search_with_node_type_filter(auth_client: TestClient, test_project_id: str) -> None:
-    """Test searching with node type filter."""
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/search",
-        params={"q": "test", "nodeType": "author"}
+async def test_invalid_type_filters_are_rejected(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    invalid_node = await client.get(
+        f"/api/v1/projects/{project_id}/graph/data",
+        params={"nodeType": "invalid_type"},
+        headers=_auth(token),
     )
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
+    invalid_edge = await client.get(
+        f"/api/v1/projects/{project_id}/graph/data",
+        params={"edgeType": "invalid_type"},
+        headers=_auth(token),
+    )
+
+    assert invalid_node.status_code == 422
+    assert invalid_edge.status_code == 422
 
 
 @pytest.mark.integration
-async def test_invalid_node_type_filter(auth_client: TestClient, test_project_id: str) -> None:
-    """Test invalid node type filter."""
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/data",
-        params={"nodeType": "invalid_type"}
-    )
-    
-    assert response.status_code == 422  # Validation error
+async def test_create_relationship_validation(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+    url = f"/api/v1/projects/{project_id}/graph/relationships"
 
-
-@pytest.mark.integration
-async def test_invalid_edge_type_filter(auth_client: TestClient, test_project_id: str) -> None:
-    """Test invalid edge type filter.""" 
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/data",
-        params={"edgeType": "invalid_type"}
-    )
-    
-    assert response.status_code == 422  # Validation error
-
-
-@pytest.mark.integration
-async def test_create_relationship_validation(auth_client: TestClient, test_project_id: str) -> None:
-    """Test relationship creation validation."""
-    # Test with invalid UUIDs
-    response = auth_client.post(
-        f"/api/v1/projects/{test_project_id}/graph/relationships",
+    invalid_uuid = await client.post(
+        url,
         json={
             "sourceNodeId": "invalid-uuid",
             "targetNodeId": str(uuid.uuid4()),
             "relationshipType": "co_author",
-        }
+        },
+        headers=_auth(token),
     )
-    
-    assert response.status_code == 422  # Validation error
-    
-    # Test with invalid relationship type
-    response = auth_client.post(
-        f"/api/v1/projects/{test_project_id}/graph/relationships",
+    invalid_type = await client.post(
+        url,
         json={
             "sourceNodeId": str(uuid.uuid4()),
             "targetNodeId": str(uuid.uuid4()),
             "relationshipType": "invalid_type",
-        }
+        },
+        headers=_auth(token),
     )
-    
-    assert response.status_code == 422  # Validation error
-    
-    # Test with invalid weight
-    response = auth_client.post(
-        f"/api/v1/projects/{test_project_id}/graph/relationships",
+    negative_weight = await client.post(
+        url,
         json={
             "sourceNodeId": str(uuid.uuid4()),
             "targetNodeId": str(uuid.uuid4()),
             "relationshipType": "co_author",
-            "weight": -1.0,  # Negative weight should be invalid
-        }
+            "weight": -1.0,
+        },
+        headers=_auth(token),
     )
-    
-    assert response.status_code == 422  # Validation error
+
+    assert invalid_uuid.status_code == 422
+    assert invalid_type.status_code == 422
+    assert negative_weight.status_code == 422
 
 
 @pytest.mark.integration
-async def test_search_validation(auth_client: TestClient, test_project_id: str) -> None:
-    """Test search query validation."""
-    # Test empty query
-    response = auth_client.get(
-        f"/api/v1/projects/{test_project_id}/graph/search",
-        params={"q": ""}
+async def test_search_validation(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    empty_query = await client.get(
+        f"/api/v1/projects/{project_id}/graph/search", params={"q": ""}, headers=_auth(token)
     )
-    
-    assert response.status_code == 422  # Validation error
-    
-    # Test missing query parameter
-    response = auth_client.get(f"/api/v1/projects/{test_project_id}/graph/search")
-    
-    assert response.status_code == 422  # Validation error
+    missing_query = await client.get(
+        f"/api/v1/projects/{project_id}/graph/search", headers=_auth(token)
+    )
+
+    assert empty_query.status_code == 422
+    assert missing_query.status_code == 422
 
 
 @pytest.mark.integration
-async def test_unauthorized_access(client: TestClient, test_project_id: str) -> None:
-    """Test accessing graph endpoints without authentication."""
-    # Test without auth token
-    response = client.get(f"/api/v1/projects/{test_project_id}/graph/data")
-    assert response.status_code == 401
-    
-    response = client.get(f"/api/v1/projects/{test_project_id}/graph/stats")
-    assert response.status_code == 401
-    
-    response = client.post(f"/api/v1/projects/{test_project_id}/graph/rebuild")
-    assert response.status_code == 401
+async def test_unauthorized_access(client: AsyncClient) -> None:
+    token = await _register_and_login(client, email="graph@example.com")
+    project_id = await _create_project(client, token)
+
+    data = await client.get(f"/api/v1/projects/{project_id}/graph/data")
+    stats = await client.get(f"/api/v1/projects/{project_id}/graph/stats")
+    rebuild = await client.post(f"/api/v1/projects/{project_id}/graph/rebuild")
+
+    assert data.status_code == 401
+    assert stats.status_code == 401
+    assert rebuild.status_code == 401
 
 
 @pytest.mark.integration
-async def test_cross_project_access(
-    auth_client: TestClient, 
-    test_project_id: str,
-    db_session,
-    test_user,
-) -> None:
-    """Test that users cannot access other users' project graphs.""" 
-    # This would require creating another user and project
-    # For now, just test with a random project ID
-    fake_project_id = str(uuid.uuid4())
-    
-    response = auth_client.get(f"/api/v1/projects/{fake_project_id}/graph/data")
-    assert response.status_code == 404  # Project not found or no access
+async def test_cross_project_access_is_not_found(client: AsyncClient) -> None:
+    owner = await _register_and_login(client, email="owner@example.com", name="Owner")
+    stranger = await _register_and_login(client, email="stranger@example.com", name="Stranger")
+    project_id = await _create_project(client, owner)
+
+    foreign = await client.get(
+        f"/api/v1/projects/{project_id}/graph/data", headers=_auth(stranger)
+    )
+    missing = await client.get(
+        f"/api/v1/projects/{uuid.uuid4()}/graph/data", headers=_auth(stranger)
+    )
+
+    assert foreign.status_code == 404
+    assert missing.status_code == 404
+
+
+@pytest.mark.integration
+async def test_viewer_cannot_mutate_the_graph(client: AsyncClient) -> None:
+    owner = await _register_and_login(client, email="owner@example.com", name="Owner")
+    viewer = await _register_and_login(client, email="viewer@example.com", name="Viewer")
+    project_id = await _create_project(client, owner)
+    invite = await client.post(
+        f"/api/v1/projects/{project_id}/members",
+        json={"email": "viewer@example.com", "role": "viewer"},
+        headers=_auth(owner),
+    )
+    assert invite.status_code == 201
+
+    rebuild = await client.post(f"/api/v1/projects/{project_id}/graph/rebuild", headers=_auth(viewer))
+    delete = await client.delete(
+        f"/api/v1/projects/{project_id}/graph/nodes/{uuid.uuid4()}", headers=_auth(viewer)
+    )
+
+    assert rebuild.status_code == 403
+    assert delete.status_code == 403
