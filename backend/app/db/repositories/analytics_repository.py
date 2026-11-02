@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -67,7 +68,7 @@ class AnalyticsRepository:
         *,
         row_count: int,
         column_count: int,
-        profile_data: dict,
+        profile_data: dict[str, Any],
     ) -> AnalyticsDataset:
         """Update dataset profiling information."""
         dataset = await self._get_dataset_required(dataset_id)
@@ -78,9 +79,7 @@ class AnalyticsRepository:
         await self._session.flush()
         return dataset
 
-    async def mark_dataset_failed(
-        self, dataset_id: UUID, error: str
-    ) -> AnalyticsDataset:
+    async def mark_dataset_failed(self, dataset_id: UUID, error: str) -> AnalyticsDataset:
         """Mark a dataset as failed."""
         dataset = await self._get_dataset_required(dataset_id)
         dataset.status = "failed"
@@ -139,8 +138,8 @@ class AnalyticsRepository:
         analysis_id: UUID,
         *,
         analysis_code: str,
-        result_data: dict,
-        chart_data: dict | None,
+        result_data: dict[str, Any],
+        chart_data: dict[str, Any] | None,
         explanation: str,
     ) -> AnalyticsAnalysis:
         """Update analysis with results."""
@@ -153,9 +152,7 @@ class AnalyticsRepository:
         await self._session.flush()
         return analysis
 
-    async def mark_analysis_failed(
-        self, analysis_id: UUID, error: str
-    ) -> AnalyticsAnalysis:
+    async def mark_analysis_failed(self, analysis_id: UUID, error: str) -> AnalyticsAnalysis:
         """Mark an analysis as failed."""
         analysis = await self._get_analysis_required(analysis_id)
         analysis.status = "failed"

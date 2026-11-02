@@ -56,6 +56,9 @@ dev = [
     "mypy==2.3.0",
     "pip-audit==2.10.1",
     "fakeredis==2.37.0",
+    # Stub packages for runtime deps that ship without inline types.
+    "pandas-stubs==2.2.3.250527",
+    "types-Markdown==3.8.0.20250809",
 ]
 
 [tool.setuptools.packages.find]
@@ -92,6 +95,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106"]
+# Alembic revisions and the deterministic mock agent embed generated SQL and
+# prose templates: their long lines are content, not code structure.
+"app/db/migrations/**" = ["E501"]
+"app/services/agent_service_mock.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
@@ -118,7 +125,7 @@ plugins = ["pydantic.mypy"]
 # boundaries is an accepted, explicit trade-off rather than a project-wide
 # strictness relaxation.
 [[tool.mypy.overrides]]
-module = ["fitz", "pytesseract", "pdfplumber", "pdfplumber.*"]
+module = ["fitz", "pytesseract", "pdfplumber", "pdfplumber.*", "weasyprint"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------

@@ -68,7 +68,8 @@ class NotificationRepository:
             update(Notification)
             .where(Notification.id == notification_id, Notification.user_id == user_id)
             .values(read=True)
+            .returning(Notification.id)
         )
         result = await self._session.execute(statement)
         await self._session.flush()
-        return bool(result.rowcount)
+        return result.first() is not None

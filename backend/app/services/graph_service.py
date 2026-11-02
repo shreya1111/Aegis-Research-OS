@@ -7,13 +7,10 @@ from uuid import UUID
 
 from app.core.logging import get_logger
 from app.db.models.graph_edge import EdgeType, GraphEdge
-from app.db.models.graph_node import GraphNode, NodeType
+from app.db.models.graph_node import NodeType
 from app.db.repositories.graph_repository import GraphRepository
 from app.services.entity_extraction_service import (
-    EntityExtractionResult,
     EntityExtractionService,
-    ExtractedEntity,
-    ExtractedRelationship,
 )
 from app.services.ingestion.types import ExtractedDocument
 from app.services.retrieval.types import RetrievedChunk
@@ -34,9 +31,7 @@ class GraphService:
         self._extraction_service = entity_extraction_service
 
     async def process_document_entities(
-        self, 
-        project_id: UUID, 
-        document: ExtractedDocument
+        self, project_id: UUID, document: ExtractedDocument
     ) -> None:
         """Extract entities from a document and add them to the knowledge graph."""
         logger.info(
@@ -45,18 +40,18 @@ class GraphService:
                 "event": "graph.process_document_entities.start",
                 "project_id": str(project_id),
                 "document_title": document.title or "Unknown",
-            }
+            },
         )
-        
+
         try:
             # Extract entities and relationships
             extraction_result = self._extraction_service.extract_from_document(document)
-            
+
             # Deduplicate entities
             unique_entities = self._extraction_service.deduplicate_entities(
                 list(extraction_result.entities)
             )
-            
+
             # Create or update nodes
             entity_to_node = {}
             for entity in unique_entities:
@@ -67,12 +62,12 @@ class GraphService:
                     metadata=entity.metadata,
                 )
                 entity_to_node[entity] = node
-            
+
             # Create relationships
             for relationship in extraction_result.relationships:
                 source_node = entity_to_node.get(relationship.source)
                 target_node = entity_to_node.get(relationship.target)
-                
+
                 if source_node and target_node:
                     await self._graph_repo.get_or_create_edge(
                         project_id=project_id,
@@ -82,7 +77,7 @@ class GraphService:
                         weight=relationship.weight,
                         metadata=relationship.metadata,
                     )
-            
+
             logger.info(
                 "graph.process_document_entities.success",
                 extra={
@@ -90,23 +85,21 @@ class GraphService:
                     "project_id": str(project_id),
                     "entities_processed": len(unique_entities),
                     "relationships_created": len(extraction_result.relationships),
-                }
+                },
             )
-            
+
         except Exception:
             logger.exception(
                 "graph.process_document_entities.failed",
                 extra={
                     "event": "graph.process_document_entities.failed",
                     "project_id": str(project_id),
-                }
+                },
             )
             raise
 
     async def process_retrieval_entities(
-        self, 
-        project_id: UUID, 
-        chunks: list[RetrievedChunk]
+        self, project_id: UUID, chunks: list[RetrievedChunk]
     ) -> None:
         """Extract entities from retrieval results and add to knowledge graph."""
         logger.info(
@@ -115,18 +108,18 @@ class GraphService:
                 "event": "graph.process_retrieval_entities.start",
                 "project_id": str(project_id),
                 "chunk_count": len(chunks),
-            }
+            },
         )
-        
+
         try:
             # Extract entities from chunks
             extraction_result = self._extraction_service.extract_from_retrieved_chunks(chunks)
-            
+
             # Deduplicate entities
             unique_entities = self._extraction_service.deduplicate_entities(
                 list(extraction_result.entities)
             )
-            
+
             # Create or update nodes
             for entity in unique_entities:
                 await self._graph_repo.get_or_create_node(
@@ -135,70 +128,67 @@ class GraphService:
                     name=entity.name,
                     metadata=entity.metadata,
                 )
-            
+
             logger.info(
                 "graph.process_retrieval_entities.success",
                 extra={
                     "event": "graph.process_retrieval_entities.success",
                     "project_id": str(project_id),
                     "entities_processed": len(unique_entities),
-                }
+                },
             )
-            
+
         except Exception:
             logger.exception(
                 "graph.process_retrieval_entities.failed",
                 extra={
                     "event": "graph.process_retrieval_entities.failed",
                     "project_id": str(project_id),
-                }
+                },
             )
             raise
 
     async def get_graph_data(
-        self,
-        project_id: UUID,
-        node_type: NodeType | None = None,
-        edge_type: EdgeType | None = None
+        self, project_id: UUID, node_type: NodeType | None = None, edge_type: EdgeType | None = None
     ) -> dict[str, Any]:
         """Get graph data formatted for frontend visualization."""
-        nodes = await self._graph_repo.get_nodes_for_project(
-            project_id, node_type=node_type
-        )
-        edges = await self._graph_repo.get_edges_for_project(
-            project_id, edge_type=edge_type
-        )
-        
+        nodes = await self._graph_repo.get_nodes_for_project(project_id, node_type=node_type)
+        edges = await self._graph_repo.get_edges_for_project(project_id, edge_type=edge_type)
+
         # Format for frontend (react-flow compatible)
         formatted_nodes = []
         for node in nodes:
-            formatted_nodes.append({
-                "id": str(node.id),
-                "type": node.node_type.value,
-                "data": {
-                    "label": node.name,
-                    "nodeType": node.node_type.value,
-                    "metadata": node.metadata_,
-                    "createdAt": node.created_at.isoformat(),
-                },
-                "position": {"x": 0, "y": 0},  # Will be positioned by layout algorithm
-            })
-        
+            formatted_nodes.append(
+                {
+                    "id": str(node.id),
+                    "type": node.node_type.value,
+                    "data": {
+                        "label": node.name,
+                        "nodeType": node.node_type.value,
+                        "metadata": node.metadata_,
+                        "createdAt": node.created_at.isoformat(),
+                    },
+                    "position": {"x": 0, "y": 0},  # Will be positioned by layout algorithm
+                }
+            )
+
         formatted_edges = []
         for edge in edges:
-            formatted_edges.append({
-                "id": str(edge.id),
-                "source": str(edge.source_node_id),
-                "target": str(edge.target_node_id),
-                "type": edge.edge_type.value,
-                "data": {
-                    "weight": edge.weight,
-                    "edgeType": edge.edge_type.value,
-                    "metadata": edge.metadata_,
-                    "createdAt": edge.created_at.isoformat(),
-                },
-            })
-        
+            formatted_edges.append(
+                {
+                    "id": str(edge.id),
+                    "source": str(edge.source_node_id),
+                    "target": str(edge.target_node_id),
+                    "type": edge.edge_type.value,
+                    "data": {
+                        "weight": edge.weight,
+                        "edgeType": edge.edge_type.value,
+                        "metadata": edge.metadata_,
+                        "createdAt": edge.created_at.isoformat(),
+                    },
+                }
+            )
+
         return {
             "nodes": formatted_nodes,
             "edges": formatted_edges,
@@ -209,11 +199,9 @@ class GraphService:
         node = await self._graph_repo.get_node_by_id(node_id, project_id)
         if not node:
             return None
-        
-        neighbors, connecting_edges = await self._graph_repo.get_node_neighbors(
-            node_id, project_id
-        )
-        
+
+        neighbors, connecting_edges = await self._graph_repo.get_node_neighbors(node_id, project_id)
+
         return {
             "node": {
                 "id": str(node.id),
@@ -248,16 +236,11 @@ class GraphService:
         return await self._graph_repo.get_graph_stats(project_id)
 
     async def search_nodes(
-        self,
-        project_id: UUID,
-        query: str,
-        node_type: NodeType | None = None
+        self, project_id: UUID, query: str, node_type: NodeType | None = None
     ) -> list[dict[str, Any]]:
         """Search for nodes by name."""
-        nodes = await self._graph_repo.search_nodes(
-            project_id, query, node_type=node_type
-        )
-        
+        nodes = await self._graph_repo.search_nodes(project_id, query, node_type=node_type)
+
         return [
             {
                 "id": str(node.id),
@@ -275,7 +258,7 @@ class GraphService:
         target_node_id: UUID,
         relationship_type: EdgeType,
         weight: float = 1.0,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> GraphEdge:
         """Create a manual relationship between two nodes."""
         return await self._graph_repo.get_or_create_edge(

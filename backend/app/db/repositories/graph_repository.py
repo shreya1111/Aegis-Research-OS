@@ -52,7 +52,7 @@ class GraphRepository:
         stmt = select(GraphNode).where(
             GraphNode.project_id == project_id,
             GraphNode.node_type == node_type,
-            func.lower(GraphNode.name) == name.lower()
+            func.lower(GraphNode.name) == name.lower(),
         )
         result = await self._session.execute(stmt)
         existing_node = result.scalar_one_or_none()
@@ -135,10 +135,7 @@ class GraphRepository:
         )
 
     async def get_nodes_for_project(
-        self,
-        project_id: UUID,
-        node_type: NodeType | None = None,
-        limit: int = 100
+        self, project_id: UUID, node_type: NodeType | None = None, limit: int = 100
     ) -> list[GraphNode]:
         """Get all nodes for a project, optionally filtered by type."""
         stmt = select(GraphNode).where(GraphNode.project_id == project_id)
@@ -152,18 +149,12 @@ class GraphRepository:
         return list(result.scalars().all())
 
     async def get_edges_for_project(
-        self,
-        project_id: UUID,
-        edge_type: EdgeType | None = None,
-        limit: int = 200
+        self, project_id: UUID, edge_type: EdgeType | None = None, limit: int = 200
     ) -> list[GraphEdge]:
         """Get all edges for a project, optionally filtered by type."""
         stmt = (
             select(GraphEdge)
-            .options(
-                selectinload(GraphEdge.source_node),
-                selectinload(GraphEdge.target_node)
-            )
+            .options(selectinload(GraphEdge.source_node), selectinload(GraphEdge.target_node))
             .where(GraphEdge.project_id == project_id)
         )
 
@@ -177,37 +168,26 @@ class GraphRepository:
 
     async def get_node_by_id(self, node_id: UUID, project_id: UUID) -> GraphNode | None:
         """Get a specific node by ID within a project."""
-        stmt = select(GraphNode).where(
-            GraphNode.id == node_id,
-            GraphNode.project_id == project_id
-        )
+        stmt = select(GraphNode).where(GraphNode.id == node_id, GraphNode.project_id == project_id)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_node_neighbors(
-        self,
-        node_id: UUID,
-        project_id: UUID
+        self, node_id: UUID, project_id: UUID
     ) -> tuple[list[GraphNode], list[GraphEdge]]:
         """Get all neighboring nodes and connecting edges for a given node."""
         # Get outgoing edges
         outgoing_stmt = (
             select(GraphEdge)
             .options(selectinload(GraphEdge.target_node))
-            .where(
-                GraphEdge.source_node_id == node_id,
-                GraphEdge.project_id == project_id
-            )
+            .where(GraphEdge.source_node_id == node_id, GraphEdge.project_id == project_id)
         )
 
         # Get incoming edges
         incoming_stmt = (
             select(GraphEdge)
             .options(selectinload(GraphEdge.source_node))
-            .where(
-                GraphEdge.target_node_id == node_id,
-                GraphEdge.project_id == project_id
-            )
+            .where(GraphEdge.target_node_id == node_id, GraphEdge.project_id == project_id)
         )
 
         outgoing_result = await self._session.execute(outgoing_stmt)
@@ -246,8 +226,13 @@ class GraphRepository:
         node_result = await self._session.execute(node_counts_stmt)
         edge_result = await self._session.execute(edge_counts_stmt)
 
-        node_counts = dict(node_result.all())
-        edge_counts = dict(edge_result.all())
+        node_counts: dict[NodeType, int] = {}
+        for node_type, count in node_result.all():
+            node_counts[node_type] = count
+
+        edge_counts: dict[EdgeType, int] = {}
+        for edge_type, count in edge_result.all():
+            edge_counts[edge_type] = count
 
         return {
             "total_nodes": sum(node_counts.values()),
@@ -257,16 +242,11 @@ class GraphRepository:
         }
 
     async def search_nodes(
-        self,
-        project_id: UUID,
-        query: str,
-        node_type: NodeType | None = None,
-        limit: int = 20
+        self, project_id: UUID, query: str, node_type: NodeType | None = None, limit: int = 20
     ) -> list[GraphNode]:
         """Search for nodes by name within a project."""
         stmt = select(GraphNode).where(
-            GraphNode.project_id == project_id,
-            func.lower(GraphNode.name).contains(query.lower())
+            GraphNode.project_id == project_id, func.lower(GraphNode.name).contains(query.lower())
         )
 
         if node_type:
@@ -279,10 +259,7 @@ class GraphRepository:
 
     async def delete_node(self, node_id: UUID, project_id: UUID) -> bool:
         """Delete a node and all its edges."""
-        stmt = select(GraphNode).where(
-            GraphNode.id == node_id,
-            GraphNode.project_id == project_id
-        )
+        stmt = select(GraphNode).where(GraphNode.id == node_id, GraphNode.project_id == project_id)
         result = await self._session.execute(stmt)
         node = result.scalar_one_or_none()
 
@@ -295,10 +272,7 @@ class GraphRepository:
 
     async def delete_edge(self, edge_id: UUID, project_id: UUID) -> bool:
         """Delete a specific edge."""
-        stmt = select(GraphEdge).where(
-            GraphEdge.id == edge_id,
-            GraphEdge.project_id == project_id
-        )
+        stmt = select(GraphEdge).where(GraphEdge.id == edge_id, GraphEdge.project_id == project_id)
         result = await self._session.execute(stmt)
         edge = result.scalar_one_or_none()
 

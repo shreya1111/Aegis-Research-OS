@@ -2,11 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Protocol
 from uuid import UUID
 
 from app.db.models.report import Report, ReportStatus, ReportType
 from app.db.repositories.report_repository import ReportRepository
+from app.services.agent_service import AgentRunResult
+
+
+class ResearchAgent(Protocol):
+    """The slice of the agent pipeline this service depends on.
+
+    Declared as a protocol so the deterministic mock used by the background
+    runner is accepted without importing it, and so a call site cannot reach
+    past the one method reports actually use.
+    """
+
+    async def run(
+        self,
+        *,
+        project_id: UUID,
+        request: str,
+        conversation_id: UUID | None = None,
+    ) -> AgentRunResult: ...
 
 
 class ReportService:
@@ -16,7 +34,7 @@ class ReportService:
         self,
         *,
         report_repository: ReportRepository,
-        agent_service: Any,  # AgentService or compatible mock
+        agent_service: ResearchAgent,
     ) -> None:
         self._reports = report_repository
         self._agent_service = agent_service
@@ -135,7 +153,8 @@ class ReportService:
             f"5. Be written in clear, professional language\n"
             f"6. Be approximately 300-500 words\n\n"
             f"Report Title: {report.title}\n\n"
-            f"Full Report Content:\n{report.content_markdown[:10000]}"  # Limit to avoid token limits
+            # Truncated to keep the prompt inside the model's context window.
+            f"Full Report Content:\n{report.content_markdown[:10000]}"
         )
 
         # Generate summary using agent service (which has LLM access)
@@ -144,4 +163,4 @@ class ReportService:
             request=summary_request,
         )
 
-        return result.answer
+        return str(result.answer)

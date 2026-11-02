@@ -9,7 +9,7 @@ boundary lives (design §2.2).
 from __future__ import annotations
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 
 PASSWORD = "correct-horse-battery"
 
@@ -35,7 +35,7 @@ async def _create_project(client: AsyncClient, token: str, title: str = "Shared 
 
 async def _invite(
     client: AsyncClient, token: str, project_id: str, email: str, role: str
-) -> object:
+) -> Response:
     return await client.post(
         f"/api/v1/projects/{project_id}/members",
         json={"email": email, "role": role},

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String, Text
@@ -25,12 +25,12 @@ class AnalyticsDataset(Base, UUIDPrimaryKeyMixin, CreatedAtMixin):
     status: Mapped[str] = mapped_column(String(20))  # pending, profiled, failed
     row_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     column_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    profile_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    profile_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     file_path: Mapped[str] = mapped_column(String(1000))
 
     # Relationships
-    project: Mapped["Project"] = relationship(back_populates="analytics_datasets")  # type: ignore
-    analyses: Mapped[list["AnalyticsAnalysis"]] = relationship(
+    project: Mapped[Project] = relationship(back_populates="analytics_datasets")
+    analyses: Mapped[list[AnalyticsAnalysis]] = relationship(
         back_populates="dataset", cascade="all, delete-orphan"
     )
 
@@ -46,12 +46,12 @@ class AnalyticsAnalysis(Base, UUIDPrimaryKeyMixin, CreatedAtMixin):
     project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
     question: Mapped[str] = mapped_column(Text)
     analysis_code: Mapped[str | None] = mapped_column(Text, nullable=True)
-    result_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    chart_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    result_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    chart_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20))  # pending, completed, failed
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    dataset: Mapped["AnalyticsDataset"] = relationship(back_populates="analyses")
-    project: Mapped["Project"] = relationship()  # type: ignore
+    dataset: Mapped[AnalyticsDataset] = relationship(back_populates="analyses")
+    project: Mapped[Project] = relationship()
