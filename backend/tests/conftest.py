@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 import pytest
 from fakeredis.aioredis import FakeRedis
@@ -17,12 +18,13 @@ from app.main import create_app
 
 
 @pytest.fixture
-def settings() -> Settings:
+def settings(tmp_path: Path) -> Settings:
     """Deterministic test configuration, independent of the developer's ``.env``.
 
     Points at the dedicated ``aegis_test`` database and a fakeredis-backed cache
-    (overridden per-app in :func:`app`), so integration tests never touch
-    development data.
+    (overridden per-app in :func:`app`), and parks uploaded files under the
+    test's own temporary directory, so integration tests never touch
+    development data or leave artefacts in the checkout.
     """
     return Settings(
         environment="development",
@@ -32,6 +34,7 @@ def settings() -> Settings:
         jwt_secret="integration-test-secret-of-sufficient-length-32b",
         rate_limit_login_per_minute=1000,
         rate_limit_register_per_minute=1000,
+        data_dir=str(tmp_path),
     )
 
 
@@ -77,6 +80,7 @@ def app(
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from app.core.cache import RateLimiter, TokenDenylist, get_rate_limiter, get_token_denylist
+    from app.core.config import get_settings
     from app.db.session import get_db_session
 
     fake_redis = FakeRedis(decode_responses=True)
@@ -99,6 +103,11 @@ def app(
     monkeypatch.setattr("app.db.session.get_session_factory", lambda: session_factory)
 
     fastapi_app = create_app(settings)
+    # Route dependencies resolve settings through ``get_settings``, whose cached
+    # instance is built from the process environment. Point it at the test
+    # settings so tests exercise the configuration they declare (temporary
+    # upload directory, test JWT secret) instead of the developer's defaults.
+    fastapi_app.dependency_overrides[get_settings] = lambda: settings
     fastapi_app.dependency_overrides[get_db_session] = override_get_db_session
     fastapi_app.dependency_overrides[get_token_denylist] = lambda: TokenDenylist(fake_redis)
     fastapi_app.dependency_overrides[get_rate_limiter] = lambda: RateLimiter(fake_redis)

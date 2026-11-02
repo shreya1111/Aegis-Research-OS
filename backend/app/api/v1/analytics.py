@@ -18,7 +18,7 @@ from app.api.deps import (
     SettingsDep,
 )
 from app.api.v1.deps import ProjectEditorDep, ProjectInScopeDep, resolve_project_access
-from app.core.config import get_settings
+from app.core.config import Settings
 from app.core.envelope import ok
 from app.core.errors import FileTooLargeError, NotFoundError, PermissionDeniedError
 from app.db.models.analytics import AnalyticsDataset
@@ -31,6 +31,7 @@ from app.schemas.analytics import (
     AnalyticsDatasetRead,
 )
 from app.schemas.common import ApiResponse
+from app.services.analytics_runner import run_analysis, run_dataset_profiling
 from app.services.analytics_service import AnalyticsService
 from app.services.ingestion.validation import sanitise_filename
 from app.services.membership_service import MembershipService
@@ -42,18 +43,18 @@ router = APIRouter(tags=["analytics"])
 
 UploadedFile = Annotated[UploadFile, File(...)]
 
-# Storage directory for uploaded datasets - lazy initialization
-_STORAGE_DIR: Path | None = None
 
+def get_storage_dir(settings: Settings) -> Path:
+    """Directory holding uploaded datasets, derived from this app's settings.
 
-def get_storage_dir() -> Path:
-    """Get or create storage directory."""
-    global _STORAGE_DIR
-    if _STORAGE_DIR is None:
-        settings = get_settings()
-        _STORAGE_DIR = Path(settings.data_dir) / "analytics"
-        _STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-    return _STORAGE_DIR
+    Derived per call rather than cached in a module global: a process may
+    compose more than one application (tests, or a future multi-tenant
+    deployment), and a cached path would send every instance's uploads to the
+    first instance's directory.
+    """
+    storage_dir = Path(settings.data_dir) / "analytics"
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    return storage_dir
 
 
 def get_analytics_repo(session: DbSessionDep) -> AnalyticsRepository:
@@ -117,7 +118,6 @@ async def upload_dataset(
     background_tasks: BackgroundTasks,
     session: DbSessionDep,
     repo: AnalyticsRepositoryDep,
-    analytics_service: AnalyticsServiceDep,
     settings: SettingsDep,
     file: UploadedFile,
 ) -> ApiResponse[AnalyticsDatasetRead]:
@@ -127,8 +127,7 @@ async def upload_dataset(
     filename = sanitise_filename(file.filename or "")
     if not filename.lower().endswith(".csv"):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only CSV files are supported"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV files are supported"
         )
 
     # Read at most one byte past the limit: an oversized upload is detected
@@ -138,14 +137,11 @@ async def upload_dataset(
         max_mb = settings.max_upload_bytes // (1024 * 1024)
         raise FileTooLargeError(f"Files must be {max_mb} MB or smaller.")
     if len(content) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Empty file"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
 
     # Save file
     file_id = uuid4()
-    file_path = get_storage_dir() / f"{file_id}.csv"
+    file_path = get_storage_dir(settings) / f"{file_id}.csv"
     file_path.write_bytes(content)
 
     # Create dataset record
@@ -158,12 +154,9 @@ async def upload_dataset(
     # Commit before background task
     await session.commit()
 
-    # Profile dataset in background
-    background_tasks.add_task(
-        analytics_service.profile_dataset,
-        dataset.id,
-        content,
-    )
+    # Profile in the background. The runner opens its own session, because the
+    # request-scoped one has already closed by the time this runs (design §6.7).
+    background_tasks.add_task(run_dataset_profiling, dataset.id, content)
 
     return ok(AnalyticsDatasetRead.from_model(dataset))
 
@@ -218,7 +211,6 @@ async def analyze_dataset(
     background_tasks: BackgroundTasks,
     session: DbSessionDep,
     repo: AnalyticsRepositoryDep,
-    analytics_service: AnalyticsServiceDep,
     project_service: ProjectServiceDep,
     membership_service: MembershipServiceDep,
 ) -> ApiResponse[AnalyticsAnalysisRead]:
@@ -242,15 +234,15 @@ async def analyze_dataset(
     # Commit before background task
     await session.commit()
 
-    # Run analysis in background
+    # Run the analysis in the background, in its own session (design §6.7).
     csv_content = Path(dataset.file_path).read_bytes()
     background_tasks.add_task(
-        analytics_service.analyze_dataset,
-        analysis.id,
-        dataset_id,
-        request.question,
-        csv_content,
-        dataset.profile_data or {},
+        run_analysis,
+        analysis_id=analysis.id,
+        dataset_id=dataset_id,
+        question=request.question,
+        csv_content=csv_content,
+        profile_data=dataset.profile_data or {},
     )
 
     return ok(AnalyticsAnalysisRead.from_model(analysis))

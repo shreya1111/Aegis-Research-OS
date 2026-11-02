@@ -28,7 +28,9 @@ def _auth(token: str) -> dict[str, str]:
 
 
 async def _create_project(client: AsyncClient, token: str) -> str:
-    response = await client.post("/api/v1/projects", json={"title": "Analytics"}, headers=_auth(token))
+    response = await client.post(
+        "/api/v1/projects", json={"title": "Analytics"}, headers=_auth(token)
+    )
     assert response.status_code == 201
     return str(response.json()["data"]["id"])
 
@@ -53,6 +55,22 @@ async def _upload_dataset(client: AsyncClient, token: str, project_id: str) -> s
 
 
 @pytest.mark.integration
+async def test_upload_profiles_the_dataset(client: AsyncClient) -> None:
+    """The upload response is a pending row; profiling must complete after it."""
+    owner = await _register_and_login(client, email="owner@example.com", name="Owner")
+    project_id = await _create_project(client, owner)
+    dataset_id = await _upload_dataset(client, owner, project_id)
+
+    response = await client.get(f"/api/v1/analytics/datasets/{dataset_id}", headers=_auth(owner))
+
+    assert response.status_code == 200
+    dataset = response.json()["data"]
+    assert dataset["status"] == "profiled", dataset
+    assert dataset["row_count"] == 2
+    assert dataset["column_count"] == 2
+
+
+@pytest.mark.integration
 async def test_stranger_cannot_reach_another_projects_dataset(client: AsyncClient) -> None:
     owner = await _register_and_login(client, email="owner@example.com", name="Owner")
     stranger = await _register_and_login(client, email="stranger@example.com", name="Stranger")
@@ -71,9 +89,7 @@ async def test_stranger_cannot_reach_another_projects_dataset(client: AsyncClien
     delete = await client.delete(
         f"/api/v1/analytics/datasets/{dataset_id}", headers=_auth(stranger)
     )
-    owners_view = await client.get(
-        f"/api/v1/analytics/datasets/{dataset_id}", headers=_auth(owner)
-    )
+    owners_view = await client.get(f"/api/v1/analytics/datasets/{dataset_id}", headers=_auth(owner))
 
     assert read.status_code == 404
     assert analyses.status_code == 404
@@ -99,9 +115,7 @@ async def test_viewer_can_read_but_not_mutate_datasets(client: AsyncClient) -> N
         json={"question": "What is the mean value?"},
         headers=_auth(viewer),
     )
-    delete = await client.delete(
-        f"/api/v1/analytics/datasets/{dataset_id}", headers=_auth(viewer)
-    )
+    delete = await client.delete(f"/api/v1/analytics/datasets/{dataset_id}", headers=_auth(viewer))
     owners_delete = await client.delete(
         f"/api/v1/analytics/datasets/{dataset_id}", headers=_auth(owner)
     )
