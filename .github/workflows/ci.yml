@@ -107,10 +107,10 @@ jobs:
           pip install -e ".[dev]"
           pip-audit --desc --skip-editable
 
-      # Fails on critical findings. Known high-severity advisories in the Next.js
-      # 14 dependency tree have no patched 14.x release; the framework version is
-      # fixed by the architecture, so they are reported here rather than silently
-      # suppressed. Revisit when the pinned framework major is upgraded.
+      # Fails on critical findings; the full advisory report is printed either
+      # way. The framework sits on a maintained Next.js major (15.x), so the
+      # production dependency tree is expected to be clean here — a failure
+      # means a new advisory landed and needs fixing, not suppressing.
       - name: Audit Node dependencies
         working-directory: frontend
         run: |
