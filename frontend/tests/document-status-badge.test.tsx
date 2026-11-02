@@ -20,9 +20,12 @@ describe('DocumentStatusBadge', () => {
     }
   });
 
-  it('renders the ready status with a checkmark glyph', () => {
-    render(<DocumentStatusBadge status="ready" />);
+  it('renders the ready status with a non-colour indicator', () => {
+    const { container } = render(<DocumentStatusBadge status="ready" />);
     expect(screen.getByText('Ready')).toBeInTheDocument();
-    expect(screen.getByText('✓')).toBeInTheDocument();
+
+    const icon = container.querySelector('svg');
+    expect(icon).not.toBeNull();
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
   });
 });

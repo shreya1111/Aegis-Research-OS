@@ -1,3 +1,5 @@
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+
 import { cn } from '@/lib/utils/cn';
 import type { HealthStatus } from '@/types/api';
 
@@ -9,11 +11,12 @@ export interface BackendStatusProps {
 /**
  * Reports whether the API is reachable.
  *
- * Status is conveyed by icon glyph and text as well as colour, never colour alone
+ * Status is conveyed by icon and text as well as colour, never colour alone
  * (design §5.9).
  */
 export function BackendStatus({ health }: BackendStatusProps): React.JSX.Element {
   const isOnline = health !== null;
+  const Icon = isOnline ? CheckCircle2 : AlertCircle;
 
   return (
     <div
@@ -26,9 +29,7 @@ export function BackendStatus({ health }: BackendStatusProps): React.JSX.Element
       role="status"
       aria-live="polite"
     >
-      <span aria-hidden="true" className="font-mono">
-        {isOnline ? '✓' : '✕'}
-      </span>
+      <Icon className="size-4 shrink-0" aria-hidden />
       {isOnline ? (
         <span>
           API reachable — <span className="font-mono">{health.service}</span> v

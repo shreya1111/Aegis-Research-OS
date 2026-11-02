@@ -1,5 +1,6 @@
 'use client';
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { getTrace } from '@/lib/api/query';
@@ -109,7 +110,11 @@ export function TracePanel({ projectId, runId }: TracePanelProps): React.JSX.Ele
           aria-label={isOpen ? 'Collapse reasoning trace panel' : 'Expand reasoning trace panel'}
           onClick={() => setIsOpen((current) => !current)}
         >
-          <span aria-hidden="true">{isOpen ? '»' : '«'}</span>
+          {isOpen ? (
+            <ChevronRight className="size-4" aria-hidden />
+          ) : (
+            <ChevronLeft className="size-4" aria-hidden />
+          )}
         </Button>
       </div>
 

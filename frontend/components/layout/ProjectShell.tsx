@@ -1,5 +1,6 @@
 'use client';
 
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -9,10 +10,10 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils/cn';
 import type { Project } from '@/types/api';
 
+import { Skeleton } from '@/components/feedback/Skeleton';
 import { SideNav } from '@/components/layout/SideNav';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/feedback/Skeleton';
 
 export interface ProjectShellProps {
   projectId: string;
@@ -87,9 +88,9 @@ export function ProjectShell({ projectId, children }: ProjectShellProps): React.
           aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen(true)}
         >
-          <span aria-hidden="true">☰</span>
+          <Menu className="size-5" aria-hidden />
         </Button>
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-body-sm">
+        <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-body-sm">
           <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
             Dashboard
           </Link>
@@ -99,7 +100,7 @@ export function ProjectShell({ projectId, children }: ProjectShellProps): React.
           {loadState === 'loading' ? (
             <Skeleton className="h-4 w-32" />
           ) : (
-            <span className="font-medium">{project?.title}</span>
+            <span className="truncate font-medium">{project?.title}</span>
           )}
         </nav>
       </div>
@@ -121,10 +122,24 @@ export function ProjectShell({ projectId, children }: ProjectShellProps): React.
             />
             <div
               className={cn(
-                'absolute left-0 top-0 h-full w-64 border-r bg-card shadow-lg',
+                'absolute left-0 top-0 flex h-full w-64 flex-col border-r bg-card shadow-lg',
                 'duration-200 animate-in slide-in-from-left',
               )}
             >
+              <div className="flex items-center justify-between border-b px-2 py-1.5">
+                <span className="pl-1 text-caption uppercase tracking-widest text-muted-foreground">
+                  Workspace
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Close navigation"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  <X className="size-4" aria-hidden />
+                </Button>
+              </div>
               <SideNav projectId={projectId} onNavigate={() => setDrawerOpen(false)} />
             </div>
           </div>

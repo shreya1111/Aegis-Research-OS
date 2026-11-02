@@ -1,5 +1,6 @@
 'use client';
 
+import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -111,11 +112,11 @@ export function NotificationsMenu(): React.JSX.Element | null {
           if (!open) void load();
         }}
       >
-        <span aria-hidden="true">🔔</span>
+        <Bell className="size-4" aria-hidden />
         {unread > 0 ? (
           <span
             aria-hidden="true"
-            className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground"
+            className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-caption font-semibold text-primary-foreground"
           >
             {unread > 9 ? '9+' : unread}
           </span>
@@ -138,7 +139,7 @@ export function NotificationsMenu(): React.JSX.Element | null {
                 <li key={item.id}>
                   <button
                     type="button"
-                    className="flex w-full flex-col gap-1 rounded-sm px-2 py-2 text-left hover:bg-muted"
+                    className="flex w-full flex-col gap-1 rounded-control px-2 py-2 text-left hover:bg-muted"
                     onClick={() => void handleSelect(item)}
                   >
                     <span className="flex items-center gap-2 text-body-sm font-medium">
@@ -151,7 +152,7 @@ export function NotificationsMenu(): React.JSX.Element | null {
                       {item.title}
                     </span>
                     <span className="text-body-sm text-muted-foreground">{item.message}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-caption text-muted-foreground">
                       {formatWhen(item.created_at)}
                     </span>
                   </button>

@@ -1,21 +1,21 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { AlertCircle, Database, Loader2, Network } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+
+import { getGraphData, getGraphStats, getNodeDetails, rebuildGraph } from '@/lib/api/graph';
+import { getAuthToken } from '@/lib/auth/client';
+import type { GraphData, GraphStats, NodeDetails } from '@/types/graph';
 
 import { GraphVisualization } from '@/components/graph/GraphVisualization';
 import { NodeDetailsSidebar } from '@/components/graph/NodeDetailsSidebar';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, BarChart3, Shuffle } from 'lucide-react';
-
-import { getGraphData, getNodeDetails, getGraphStats, rebuildGraph } from '@/lib/api/graph';
-import { getAuthToken } from '@/lib/auth/client';
-import type { GraphData, NodeDetails, GraphStats } from '@/types/graph';
+import { Button } from '@/components/ui/button';
 
 export default function ProjectGraphPage(): React.JSX.Element {
-  const params = useParams();
-  const projectId = params.id as string;
+  const params = useParams<{ id: string }>();
+  const projectId = params.id;
 
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [nodeDetails, setNodeDetails] = useState<NodeDetails | null>(null);
@@ -36,9 +36,8 @@ export default function ProjectGraphPage(): React.JSX.Element {
 
       setGraphData(data);
       setGraphStats(stats);
-    } catch (err) {
-      console.error('Failed to load graph data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load knowledge graph');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not load the knowledge graph.');
     } finally {
       setLoading(false);
     }
@@ -48,11 +47,9 @@ export default function ProjectGraphPage(): React.JSX.Element {
     async (nodeId: string) => {
       try {
         const token = getAuthToken();
-        const details = await getNodeDetails(projectId, nodeId, { token });
-        setNodeDetails(details);
-      } catch (err) {
-        console.error('Failed to load node details:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load node details');
+        setNodeDetails(await getNodeDetails(projectId, nodeId, { token }));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Could not load node details.');
       }
     },
     [projectId],
@@ -66,76 +63,73 @@ export default function ProjectGraphPage(): React.JSX.Element {
     try {
       const token = getAuthToken();
       await rebuildGraph(projectId, { token });
-      // Reload data after rebuild
-      setTimeout(loadGraphData, 2000); // Give some time for processing
-    } catch (err) {
-      console.error('Failed to rebuild graph:', err);
-      setError(err instanceof Error ? err.message : 'Failed to rebuild knowledge graph');
+      // Extraction runs in the background; give it a moment before reloading.
+      window.setTimeout(() => void loadGraphData(), 2000);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not rebuild the graph.');
     }
-  }, [projectId, loadGraphData]);
+  }, [loadGraphData, projectId]);
 
   useEffect(() => {
-    loadGraphData();
+    void loadGraphData();
   }, [loadGraphData]);
 
   if (loading && !graphData) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="mb-6 flex items-center space-x-2">
-          <Shuffle className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Knowledge Graph</h1>
+      <div className="flex flex-col gap-6 p-6">
+        <div className="flex items-center gap-2">
+          <Network className="size-5 text-muted-foreground" aria-hidden />
+          <h1 className="text-h2 font-semibold">Knowledge graph</h1>
         </div>
-        <div className="flex h-96 items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-            <p>Loading knowledge graph...</p>
-          </div>
+        <div className="flex h-96 items-center justify-center rounded-surface border border-dashed">
+          <p className="flex items-center gap-2 text-body-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            Loading graph…
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      {/* Header */}
-      <div className="border-b bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Shuffle className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Knowledge Graph</h1>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            {/* Stats */}
-            {graphStats && (
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <div className="flex items-center space-x-1">
-                  <BarChart3 className="h-4 w-4" />
-                  <span>{graphStats.totalNodes} nodes</span>
-                </div>
-                <div>{graphStats.totalEdges} connections</div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <Button variant="outline" onClick={handleRebuildGraph}>
-              Rebuild Graph
-            </Button>
-          </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4">
+        <div className="flex items-center gap-2">
+          <Network className="size-5 text-muted-foreground" aria-hidden />
+          <h1 className="text-h2 font-semibold">Knowledge graph</h1>
         </div>
 
-        {error && (
-          <Alert className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        <div className="flex flex-wrap items-center gap-4">
+          {graphStats && (
+            <p className="flex items-center gap-2 text-body-sm text-muted-foreground">
+              <Database className="size-4" aria-hidden />
+              <span>{graphStats.totalNodes.toLocaleString()} nodes</span>
+              <span aria-hidden>·</span>
+              <span>{graphStats.totalEdges.toLocaleString()} connections</span>
+            </p>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleRebuildGraph()}
+          >
+            Rebuild graph
+          </Button>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-1">
-        {/* Graph Visualization */}
-        <div className="flex-1">
+      {error && (
+        <div className="px-6 pt-4">
+          <Alert variant="destructive">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      <div className="flex min-h-0 flex-1">
+        <div className="min-w-0 flex-1">
           <GraphVisualization
             data={graphData}
             loading={loading}
@@ -145,7 +139,6 @@ export default function ProjectGraphPage(): React.JSX.Element {
           />
         </div>
 
-        {/* Node Details Sidebar */}
         {nodeDetails && (
           <NodeDetailsSidebar
             details={nodeDetails}

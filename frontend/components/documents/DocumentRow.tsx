@@ -1,5 +1,6 @@
 'use client';
 
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { formatBytes, formatDate } from '@/lib/utils/format';
@@ -48,6 +49,11 @@ export function DocumentRow({
             onClick={() => setExpanded((value) => !value)}
           >
             {expanded ? 'Hide' : 'Details'}
+            {expanded ? (
+              <ChevronUp className="size-4" aria-hidden />
+            ) : (
+              <ChevronDown className="size-4" aria-hidden />
+            )}
           </Button>
           <DeleteDocumentDialog
             filename={document.filename}
@@ -55,6 +61,7 @@ export function DocumentRow({
             onConfirm={() => onDelete(document.id)}
             trigger={
               <Button type="button" variant="ghost" size="sm" className="text-destructive">
+                <Trash2 className="size-4" aria-hidden />
                 Delete
               </Button>
             }

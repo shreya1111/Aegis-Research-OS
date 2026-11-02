@@ -1,3 +1,14 @@
+import {
+  BarChart3,
+  FileText,
+  History,
+  MessageSquare,
+  Network,
+  ScrollText,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react';
+
 /** Workspace left-nav definition (design §5.2). Single source for the tab set
  * so the sidebar and mobile drawer render identically. */
 
@@ -5,22 +16,18 @@ export interface ProjectNavItem {
   /** URL segment appended to `/projects/[id]`. Empty string = the Chat index. */
   segment: string;
   label: string;
-  /** Monospace glyph used as the icon (kept dependency-free). */
-  glyph: string;
-  /** Stretch features are shown but disabled with a "coming soon" affordance
-   * (design §5.1: placeholder honesty). */
-  comingSoon?: boolean;
+  icon: LucideIcon;
 }
 
 export const PROJECT_NAV_ITEMS: readonly ProjectNavItem[] = [
-  { segment: '', label: 'Chat', glyph: '💬' },
-  { segment: 'documents', label: 'Documents', glyph: '📄' },
-  { segment: 'graph', label: 'Knowledge Graph', glyph: '🕸' },
-  { segment: 'analytics', label: 'Analytics', glyph: '📈' },
-  { segment: 'reports', label: 'Reports', glyph: '📊' },
-  { segment: 'activity', label: 'Activity', glyph: '🕘' },
-  { segment: 'settings', label: 'Settings', glyph: '⚙' },
-] as const;
+  { segment: '', label: 'Chat', icon: MessageSquare },
+  { segment: 'documents', label: 'Documents', icon: FileText },
+  { segment: 'graph', label: 'Knowledge Graph', icon: Network },
+  { segment: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { segment: 'reports', label: 'Reports', icon: ScrollText },
+  { segment: 'activity', label: 'Activity', icon: History },
+  { segment: 'settings', label: 'Settings', icon: Settings },
+];
 
 /** Build the href for a nav item within a project. */
 export function projectNavHref(projectId: string, segment: string): string {

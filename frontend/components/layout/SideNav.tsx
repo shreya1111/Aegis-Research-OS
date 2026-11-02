@@ -31,26 +31,10 @@ export function SideNav({ projectId, onNavigate }: SideNavProps): React.JSX.Elem
   }
 
   return (
-    <nav aria-label="Workspace" className="flex flex-col gap-1 p-3">
+    <nav aria-label="Workspace" className="flex flex-col gap-0.5 p-3">
       {PROJECT_NAV_ITEMS.map((item) => {
         const active = isActive(item.segment);
-
-        if (item.comingSoon) {
-          return (
-            <span
-              key={item.label}
-              aria-disabled="true"
-              title="Coming soon"
-              className="flex items-center justify-between gap-3 rounded-control px-3 py-2 text-body-sm text-muted-foreground/60"
-            >
-              <span className="flex items-center gap-3">
-                <span aria-hidden="true">{item.glyph}</span>
-                {item.label}
-              </span>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-caption">Soon</span>
-            </span>
-          );
-        }
+        const Icon = item.icon;
 
         return (
           <Link
@@ -62,11 +46,11 @@ export function SideNav({ projectId, onNavigate }: SideNavProps): React.JSX.Elem
               'flex items-center gap-3 rounded-control px-3 py-2 text-body-sm transition-colors',
               active
                 ? 'bg-primary/10 font-medium text-primary'
-                : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
-            <span aria-hidden="true">{item.glyph}</span>
-            {item.label}
+            <Icon className="size-4 shrink-0" aria-hidden />
+            <span className="truncate">{item.label}</span>
           </Link>
         );
       })}

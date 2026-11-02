@@ -1,46 +1,46 @@
 'use client';
 
-import { useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useState } from 'react';
+
+import { createReport } from '@/lib/api/reports';
+import { useToast } from '@/lib/toast/toast-context';
+import type { Report, ReportType } from '@/types/report';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/lib/toast/toast-context';
-import { createReport } from '@/lib/api/reports';
-import type { Report, ReportType } from '@/types/report';
 
 import { ReportList } from './ReportList';
 
-const REPORT_TYPES: Array<{ value: ReportType; label: string; description: string }> = [
+const REPORT_TYPES: ReadonlyArray<{ value: ReportType; label: string; description: string }> = [
   {
     value: 'literature_review',
-    label: 'Literature Review',
-    description: 'Structured review with thematic sections, synthesis, and gaps',
+    label: 'Literature review',
+    description: 'Thematic sections, synthesis, and open gaps.',
   },
   {
     value: 'gap_analysis',
-    label: 'Gap Analysis',
-    description: 'Identify research gaps, contradictions, and future directions',
+    label: 'Gap analysis',
+    description: 'Research gaps, contradictions, and future directions.',
   },
   {
     value: 'source_comparison',
-    label: 'Source Comparison',
-    description: 'Compare methodologies, findings, and limitations across sources',
+    label: 'Source comparison',
+    description: 'Methodologies, findings, and limitations compared across sources.',
   },
   {
     value: 'survey',
     label: 'Survey',
-    description: 'Comprehensive overview combining review, comparison, and analysis',
+    description: 'An overview combining review, comparison, and analysis.',
   },
 ];
 
 export function ReportGenerationPanel(): React.JSX.Element {
-  const params = useParams();
-  const projectId = params.id as string;
+  const params = useParams<{ id: string }>();
+  const projectId = params.id;
   const { notify } = useToast();
 
   const [selectedType, setSelectedType] = useState<ReportType>('literature_review');
@@ -49,93 +49,95 @@ export function ReportGenerationPanel(): React.JSX.Element {
   const [reports] = useState<Report[]>([]);
   const [isLoading] = useState(false);
 
-  const handleGenerate = async () => {
+  async function handleGenerate(): Promise<void> {
     if (!title.trim()) {
-      notify('error', 'Please enter a title for your report');
+      notify('error', 'Enter a title for the report.');
       return;
     }
 
     setIsGenerating(true);
     try {
       await createReport(projectId, selectedType, title.trim());
-      notify('success', 'Report generation started. Check back in a few minutes.');
+      notify('success', 'Report generation started. It will appear here when it finishes.');
       setTitle('');
-      // In a full implementation, this would refresh the reports list
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : null;
-      notify('error', message || 'Failed to start report generation');
+    } catch (caught) {
+      notify(
+        'error',
+        caught instanceof Error && caught.message
+          ? caught.message
+          : 'Could not start report generation.',
+      );
     } finally {
       setIsGenerating(false);
     }
-  };
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="container flex max-w-3xl flex-col gap-6 py-10">
       <div>
-        <h1 className="text-h2 font-semibold">Research Artifacts</h1>
-        <p className="text-body text-muted-foreground">
-          Generate comprehensive research artifacts from your project documents using AI agents.
+        <h1 className="text-h1 font-semibold">Reports</h1>
+        <p className="text-body-sm text-muted-foreground">
+          Generate a cited artifact from this project&apos;s documents.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Generate New Report</CardTitle>
+          <CardTitle>Generate a report</CardTitle>
           <CardDescription>
-            Choose the type of research artifact to generate from your uploaded documents.
+            Choose the artifact to generate. Every claim will cite a retrieved source.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <Label htmlFor="title">Report Title</Label>
+        <CardContent className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="report-title">Title</Label>
             <Input
-              id="title"
+              id="report-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter a descriptive title for your report"
-              className="mt-1"
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="e.g. Retrieval evaluation methods, 2020–2025"
               disabled={isGenerating}
             />
           </div>
 
-          <div>
-            <Label>Report Type</Label>
+          <div className="flex flex-col gap-2">
+            <Label id="report-type-label">Type</Label>
             <RadioGroup
+              aria-labelledby="report-type-label"
               value={selectedType}
               onValueChange={(value: string) => setSelectedType(value as ReportType)}
-              className="mt-2"
+              className="gap-3"
               disabled={isGenerating}
             >
               {REPORT_TYPES.map((type) => (
-                <div key={type.value} className="flex items-start space-x-2">
+                <div key={type.value} className="flex items-start gap-3">
                   <RadioGroupItem value={type.value} id={type.value} className="mt-0.5" />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label htmlFor={type.value} className="cursor-pointer text-sm font-medium">
-                      {type.label}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">{type.description}</p>
-                  </div>
+                  <Label htmlFor={type.value} className="flex cursor-pointer flex-col gap-0.5">
+                    <span className="text-body-sm font-medium">{type.label}</span>
+                    <span className="text-caption font-normal text-muted-foreground">
+                      {type.description}
+                    </span>
+                  </Label>
                 </div>
               ))}
             </RadioGroup>
           </div>
 
           <Button
-            onClick={handleGenerate}
+            type="button"
+            onClick={() => void handleGenerate()}
             disabled={isGenerating || !title.trim()}
             className="w-full"
           >
-            {isGenerating ? 'Generating...' : 'Generate Report'}
+            {isGenerating ? 'Generating…' : 'Generate report'}
           </Button>
         </CardContent>
       </Card>
 
-      <Separator />
-
-      <div>
-        <h2 className="mb-4 text-h3 font-semibold">Generated Reports</h2>
+      <section className="flex flex-col gap-3 border-t pt-6">
+        <h2 className="text-h2 font-semibold">Generated reports</h2>
         <ReportList reports={reports} isLoading={isLoading} />
-      </div>
+      </section>
     </div>
   );
 }

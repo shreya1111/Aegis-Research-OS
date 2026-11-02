@@ -1,35 +1,42 @@
 'use client';
 
-import { useState } from 'react';
 import {
-  FileText,
-  Download,
-  Trash2,
-  Clock,
-  CheckCircle,
   AlertCircle,
-  Sparkles,
+  CheckCircle2,
+  Clock,
+  Download,
+  Loader2,
+  ScrollText,
+  Trash2,
+  type LucideIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
+import { exportReport, generateSummary, type ExportFormat } from '@/lib/api/reports';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useToast } from '@/lib/toast/toast-context';
+import { cn } from '@/lib/utils/cn';
+import { formatDistanceToNow } from '@/lib/utils/format';
+import type { Report } from '@/types/report';
+
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { Skeleton } from '@/components/feedback/Skeleton';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { formatDistanceToNow } from '@/lib/utils/format';
-import { exportReport, generateSummary, type ExportFormat } from '@/lib/api/reports';
-import { useAuth } from '@/lib/auth/auth-context';
-import { useToast } from '@/lib/toast/toast-context';
-import type { Report } from '@/types/report';
-
-function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
 
 interface ReportListProps {
   reports: Report[];
@@ -37,38 +44,49 @@ interface ReportListProps {
   onDelete?: (reportId: string) => void;
 }
 
-function getStatusIcon(status: Report['status']) {
-  switch (status) {
-    case 'pending':
-    case 'generating':
-      return <Clock className="h-4 w-4" />;
-    case 'completed':
-      return <CheckCircle className="h-4 w-4" />;
-    case 'failed':
-      return <AlertCircle className="h-4 w-4" />;
-  }
+interface StatusStyle {
+  label: string;
+  className: string;
+  Icon: LucideIcon;
+  spin?: boolean;
 }
 
-function getStatusVariant(status: Report['status']): 'default' | 'secondary' | 'destructive' {
-  switch (status) {
-    case 'pending':
-    case 'generating':
-      return 'secondary';
-    case 'completed':
-      return 'default';
-    case 'failed':
-      return 'destructive';
-  }
-}
+const STATUS_STYLES: Record<Report['status'], StatusStyle> = {
+  pending: { label: 'Queued', className: 'border-info/30 bg-info/10 text-info', Icon: Clock },
+  generating: {
+    label: 'Generating',
+    className: 'border-info/30 bg-info/10 text-info',
+    Icon: Loader2,
+    spin: true,
+  },
+  completed: {
+    label: 'Completed',
+    className: 'border-success/30 bg-success/10 text-success',
+    Icon: CheckCircle2,
+  },
+  failed: {
+    label: 'Failed',
+    className: 'border-destructive/30 bg-destructive/10 text-destructive',
+    Icon: AlertCircle,
+  },
+};
 
-function formatReportType(type: Report['type']): string {
+const EXPORT_FORMATS: ReadonlyArray<{ value: ExportFormat; label: string }> = [
+  { value: 'pdf', label: 'PDF' },
+  { value: 'docx', label: 'Word (.docx)' },
+  { value: 'html', label: 'HTML' },
+  { value: 'latex', label: 'LaTeX' },
+  { value: 'markdown', label: 'Markdown' },
+];
+
+function reportTypeLabel(type: Report['type']): string {
   switch (type) {
     case 'literature_review':
-      return 'Literature Review';
+      return 'Literature review';
     case 'gap_analysis':
-      return 'Gap Analysis';
+      return 'Gap analysis';
     case 'source_comparison':
-      return 'Source Comparison';
+      return 'Source comparison';
     case 'survey':
       return 'Survey';
     default:
@@ -76,68 +94,64 @@ function formatReportType(type: Report['type']): string {
   }
 }
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export function ReportList({ reports, isLoading, onDelete }: ReportListProps): React.JSX.Element {
   const { getValidAccessToken } = useAuth();
   const { notify } = useToast();
   const [exportingId, setExportingId] = useState<string | null>(null);
-  const [generatingSummaryId, setGeneratingSummaryId] = useState<string | null>(null);
+  const [summarisingId, setSummarisingId] = useState<string | null>(null);
+  const [summary, setSummary] = useState<{ title: string; text: string } | null>(null);
 
-  const handleExport = async (reportId: string, format: ExportFormat) => {
-    setExportingId(reportId);
+  async function handleExport(report: Report, format: ExportFormat): Promise<void> {
+    setExportingId(report.id);
     try {
       const token = await getValidAccessToken();
-      if (!token) throw new Error('Not authenticated');
+      if (!token) throw new Error('Your session has expired.');
 
-      const blob = await exportReport(reportId, format, token);
-
-      // Create download link
+      const blob = await exportReport(report.id, format, token);
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `report.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${report.title.replace(/[^\w.-]+/g, '-')}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      notify('success', `Report exported as ${format.toUpperCase()}`);
-    } catch (error: unknown) {
-      notify('error', errorMessage(error, 'Export failed'));
+      notify('success', `Exported as ${format.toUpperCase()}.`);
+    } catch (caught) {
+      notify('error', errorMessage(caught, 'Could not export the report.'));
     } finally {
       setExportingId(null);
     }
-  };
+  }
 
-  const handleGenerateSummary = async (reportId: string) => {
-    setGeneratingSummaryId(reportId);
+  async function handleGenerateSummary(report: Report): Promise<void> {
+    setSummarisingId(report.id);
     try {
       const token = await getValidAccessToken();
-      if (!token) throw new Error('Not authenticated');
+      if (!token) throw new Error('Your session has expired.');
 
-      const summary = await generateSummary(reportId, token);
-
-      // Show summary in alert or modal
-      window.alert(`Executive Summary:\n\n${summary}`);
-
-      notify('success', 'Summary generated successfully');
-    } catch (error: unknown) {
-      notify('error', errorMessage(error, 'Summary generation failed'));
+      const text = await generateSummary(report.id, token);
+      setSummary({ title: report.title, text });
+    } catch (caught) {
+      notify('error', errorMessage(caught, 'Could not generate a summary.'));
     } finally {
-      setGeneratingSummaryId(null);
+      setSummarisingId(null);
     }
-  };
+  }
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
+      <div className="flex flex-col gap-4">
+        {[0, 1, 2].map((index) => (
+          <Card key={index}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-6 w-20" />
-              </div>
-              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-40" />
             </CardHeader>
             <CardContent>
               <Skeleton className="h-4 w-full" />
@@ -150,98 +164,129 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
 
   if (reports.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-medium">No reports generated yet</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Generate your first research artifact to get started.
-        </p>
-      </div>
+      <EmptyState
+        title="No reports yet"
+        description="Generate an artifact above. Completed reports can be exported as PDF, Word, HTML, LaTeX, or Markdown."
+      />
     );
   }
 
   return (
-    <div className="space-y-4">
-      {reports.map((report) => (
-        <Card key={report.id}>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <CardTitle className="text-lg">{report.title}</CardTitle>
-                <CardDescription>
-                  {formatReportType(report.type)} •{' '}
-                  {formatDistanceToNow(new Date(report.created_at))} ago
-                </CardDescription>
-              </div>
-              <Badge variant={getStatusVariant(report.status)} className="flex items-center gap-1">
-                {getStatusIcon(report.status)}
-                {report.status.replace('_', ' ')}
-              </Badge>
-            </div>
-          </CardHeader>
+    <div className="flex flex-col gap-4">
+      {reports.map((report) => {
+        const status = STATUS_STYLES[report.status];
+        const StatusIcon = status.Icon;
 
-          {(report.status === 'completed' || report.status === 'failed') && (
-            <CardContent className="pt-0">
-              <div className="flex items-center justify-between">
-                {report.status === 'failed' && report.error_message && (
-                  <p className="text-sm text-destructive">{report.error_message}</p>
+        return (
+          <Card key={report.id}>
+            <CardHeader className="flex-row items-start justify-between gap-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <CardTitle className="truncate">{report.title}</CardTitle>
+                <p className="text-caption text-muted-foreground">
+                  {reportTypeLabel(report.type)} · {formatDistanceToNow(report.created_at)}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-caption font-medium',
+                  status.className,
                 )}
-                {report.status === 'completed' && (
-                  <p className="text-sm text-muted-foreground">
-                    Report ready for viewing and export
+              >
+                <StatusIcon className={cn('size-3.5', status.spin && 'animate-spin')} aria-hidden />
+                {status.label}
+              </span>
+            </CardHeader>
+
+            {(report.status === 'completed' || report.status === 'failed') && (
+              <CardContent className="flex flex-wrap items-center justify-between gap-3">
+                {report.status === 'failed' ? (
+                  <p className="min-w-0 text-body-sm text-destructive">
+                    {report.error_message ?? 'Generation failed.'}
                   </p>
+                ) : (
+                  <p className="text-body-sm text-muted-foreground">Ready to read or export.</p>
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
                   {report.status === 'completed' && (
                     <>
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => handleGenerateSummary(report.id)}
-                        disabled={generatingSummaryId === report.id}
+                        onClick={() => void handleGenerateSummary(report)}
+                        disabled={summarisingId === report.id}
                       >
-                        <Sparkles className="mr-1 h-4 w-4" />
-                        {generatingSummaryId === report.id ? 'Generating...' : 'Summary'}
+                        <ScrollText className="size-4" aria-hidden />
+                        {summarisingId === report.id ? 'Summarising…' : 'Summary'}
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" disabled={exportingId === report.id}>
-                            <Download className="mr-1 h-4 w-4" />
-                            {exportingId === report.id ? 'Exporting...' : 'Export'}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={exportingId === report.id}
+                          >
+                            <Download className="size-4" aria-hidden />
+                            {exportingId === report.id ? 'Exporting…' : 'Export'}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleExport(report.id, 'pdf')}>
-                            Export as PDF
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleExport(report.id, 'docx')}>
-                            Export as DOCX
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleExport(report.id, 'html')}>
-                            Export as HTML
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleExport(report.id, 'latex')}>
-                            Export as LaTeX
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleExport(report.id, 'markdown')}>
-                            Export as Markdown
-                          </DropdownMenuItem>
+                          {EXPORT_FORMATS.map((format) => (
+                            <DropdownMenuItem
+                              key={format.value}
+                              onClick={() => void handleExport(report, format.value)}
+                            >
+                              {format.label}
+                            </DropdownMenuItem>
+                          ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </>
                   )}
                   {onDelete && (
-                    <Button variant="outline" size="sm" onClick={() => onDelete(report.id)}>
-                      <Trash2 className="h-4 w-4" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      aria-label={`Delete ${report.title}`}
+                      onClick={() => onDelete(report.id)}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
                     </Button>
                   )}
                 </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      ))}
+              </CardContent>
+            )}
+          </Card>
+        );
+      })}
+
+      <Dialog
+        open={summary !== null}
+        onOpenChange={(open) => {
+          if (!open) setSummary(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Executive summary</DialogTitle>
+            <p className="text-body-sm text-muted-foreground">{summary?.title}</p>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-body-sm">
+            {summary?.text}
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
