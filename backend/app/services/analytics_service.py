@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 import logging
@@ -16,12 +17,17 @@ from uuid import UUID
 
 import pandas as pd
 
-from app.core.config import get_settings
 from app.core.errors import ValidationError
 from app.core.llm.provider import LLMProvider, Message
 from app.db.repositories.analytics_repository import AnalyticsRepository
 
 logger = logging.getLogger(__name__)
+
+
+def _numeric_stat(series: pd.Series[Any], statistic: str) -> float | None:
+    """Return one summary statistic of ``series``, or None when it is NaN."""
+    value = getattr(series, statistic)()
+    return None if pd.isna(value) else float(value)
 
 
 class AnalyticsService:
@@ -73,14 +79,13 @@ class AnalyticsService:
                 if pd.api.types.is_numeric_dtype(col_data):
                     col_profile.update(
                         {
-                            "min": float(col_data.min()) if not pd.isna(col_data.min()) else None,
-                            "max": float(col_data.max()) if not pd.isna(col_data.max()) else None,
-                            "mean": float(col_data.mean()) if not pd.isna(col_data.mean()) else None,
-                            "median": float(col_data.median()) if not pd.isna(col_data.median()) else None,
-                            "std": float(col_data.std()) if not pd.isna(col_data.std()) else None,
+                            statistic: _numeric_stat(col_data, statistic)
+                            for statistic in ("min", "max", "mean", "median", "std")
                         }
                     )
-                elif pd.api.types.is_object_dtype(col_data) or pd.api.types.is_string_dtype(col_data):
+                elif pd.api.types.is_object_dtype(col_data) or pd.api.types.is_string_dtype(
+                    col_data
+                ):
                     # String/categorical stats
                     top_values = col_data.value_counts().head(10).to_dict()
                     col_profile["top_values"] = {str(k): int(v) for k, v in top_values.items()}
@@ -97,10 +102,10 @@ class AnalyticsService:
 
             return profile
 
-        except Exception as e:
-            logger.error(f"Failed to profile dataset {dataset_id}: {e}")
-            await self._repo.mark_dataset_failed(dataset_id, str(e))
-            raise ValidationError(f"Failed to profile CSV: {e}")
+        except Exception as exc:
+            logger.error(f"Failed to profile dataset {dataset_id}: {exc}")
+            await self._repo.mark_dataset_failed(dataset_id, str(exc))
+            raise ValidationError("Failed to profile CSV.") from exc
 
     async def analyze_dataset(
         self,
@@ -147,10 +152,10 @@ class AnalyticsService:
                 "explanation": explanation,
             }
 
-        except Exception as e:
-            logger.error(f"Failed to analyze dataset: {e}")
-            await self._repo.mark_analysis_failed(analysis_id, str(e))
-            raise ValidationError(f"Analysis failed: {e}")
+        except Exception as exc:
+            logger.error(f"Failed to analyze dataset: {exc}")
+            await self._repo.mark_analysis_failed(analysis_id, str(exc))
+            raise ValidationError("Analysis failed.") from exc
 
     async def _generate_analysis_code(
         self,
@@ -158,20 +163,21 @@ class AnalyticsService:
         profile_data: dict[str, Any],
     ) -> str:
         """Use LLM to generate pandas analysis code."""
-        system_prompt = """You are a data analysis assistant. Generate Python code using pandas to answer the user's question about their dataset.
-
-Rules:
-1. The CSV data is available as a pandas DataFrame named 'df'
-2. Output ONLY valid Python code, no explanations
-3. Use matplotlib or seaborn for visualizations if needed
-4. Store results in a dictionary named 'result'
-5. Store chart data (if any) in a dictionary named 'chart' with keys: type, data, layout
-6. Do NOT use plt.show(), save figures to 'chart' instead
-7. Keep code safe: no file system access, no network calls, no subprocess
-8. Code must be self-contained and executable
-
-Dataset profile:
-""" + json.dumps(profile_data, indent=2)
+        system_prompt = (
+            "You are a data analysis assistant. Generate Python code using pandas "
+            "to answer the user's question about their dataset.\n\n"
+            "Rules:\n"
+            "1. The CSV data is available as a pandas DataFrame named 'df'\n"
+            "2. Output ONLY valid Python code, no explanations\n"
+            "3. Use matplotlib or seaborn for visualizations if needed\n"
+            "4. Store results in a dictionary named 'result'\n"
+            "5. Store chart data (if any) in a dictionary named 'chart' with keys: "
+            "type, data, layout\n"
+            "6. Do NOT use plt.show(), save figures to 'chart' instead\n"
+            "7. Keep code safe: no file system access, no network calls, no subprocess\n"
+            "8. Code must be self-contained and executable\n\n"
+            "Dataset profile:\n" + json.dumps(profile_data, indent=2)
+        )
 
         messages = [
             Message(role="system", content=system_prompt),
@@ -216,7 +222,9 @@ Dataset profile:
             (work_path / "data.csv").write_bytes(csv_content)
             (work_path / "mpl").mkdir()
 
-            execution_code = """
+            execution_code = (
+                self._child_limits_preamble()
+                + """
 import pandas as pd
 import numpy as np
 import json
@@ -227,21 +235,33 @@ df = pd.read_csv('data.csv')
 result = {}
 chart = None
 
-""" + code + """
+"""
+                + code
+                + """
 
 print(json.dumps({'result': result, 'chart': chart}, default=str))
 """
-            proc = subprocess.run(  # noqa: S603 - fixed argv, isolated interpreter
-                [sys.executable, "-I", "-c", execution_code],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                cwd=work_dir,
-                stdin=subprocess.DEVNULL,
-                env=self._sandbox_environment(work_path),
-                preexec_fn=self._child_limits() if os.name == "posix" else None,
-                check=False,
             )
+            try:
+                # The child is a blocking process; run it in a worker thread so a
+                # slow analysis cannot stall the event loop for every request.
+                proc = await asyncio.to_thread(
+                    subprocess.run,
+                    [sys.executable, "-I", "-c", execution_code],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=work_dir,
+                    stdin=subprocess.DEVNULL,
+                    env=self._sandbox_environment(work_path),
+                    check=False,
+                )
+            except subprocess.TimeoutExpired:
+                logger.warning(
+                    "analytics.analysis_code_timeout",
+                    extra={"event": "analytics.analysis_code_timeout"},
+                )
+                raise ValidationError("The generated analysis took too long to run.") from None
 
         if proc.returncode != 0:
             # Child stderr may contain paths or dataset fragments; record it
@@ -284,18 +304,28 @@ print(json.dumps({'result': result, 'chart': chart}, default=str))
         return env
 
     @staticmethod
-    def _child_limits() -> Any:
-        """Build a POSIX ``preexec_fn`` that caps the child's resources."""
+    def _child_limits_preamble() -> str:
+        """POSIX resource caps, applied inside the child before pandas loads.
 
-        def limit() -> None:  # pragma: no cover - runs in the forked child
-            import resource
+        Applied in the child rather than through ``preexec_fn``: the runner uses
+        a worker thread to avoid blocking the event loop, and fork-time hooks
+        are unsafe in a multi-threaded process.
 
-            resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
-            resource.setrlimit(resource.RLIMIT_AS, (1_073_741_824, 1_073_741_824))
-            resource.setrlimit(resource.RLIMIT_FSIZE, (16 * 1024 * 1024, 16 * 1024 * 1024))
-            resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
-
-        return limit
+        ``RLIMIT_NPROC`` is deliberately not lowered — Linux enforces it per
+        UID, so any value below the host's current process count would break
+        thread creation inside numpy/BLAS and fail every analysis.
+        """
+        if os.name != "posix":
+            return ""
+        return (
+            "import resource\n"
+            "for _limit, _value in (\n"
+            "    (resource.RLIMIT_CPU, 30),\n"
+            "    (resource.RLIMIT_AS, 1 << 30),\n"
+            "    (resource.RLIMIT_FSIZE, 16 << 20),\n"
+            "):\n"
+            "    resource.setrlimit(_limit, (_value, _value))\n"
+        )
 
     #: Modules generated code may import. Everything else is host access, not
     #: analysis: pandas/numpy are preloaded, so imports are rarely needed.
@@ -354,15 +384,16 @@ print(json.dumps({'result': result, 'chart': chart}, default=str))
         result_data: dict[str, Any],
     ) -> str:
         """Generate plain-language explanation of the analysis."""
-        system_prompt = """You are a data analysis assistant. Explain the analysis results in plain language that non-technical users can understand.
-
-Focus on:
-1. What was analyzed
-2. Key findings
-3. What the numbers mean
-4. Any notable patterns or insights
-
-Be concise but informative."""
+        system_prompt = (
+            "You are a data analysis assistant. Explain the analysis results in "
+            "plain language that non-technical users can understand.\n\n"
+            "Focus on:\n"
+            "1. What was analyzed\n"
+            "2. Key findings\n"
+            "3. What the numbers mean\n"
+            "4. Any notable patterns or insights\n\n"
+            "Be concise but informative."
+        )
 
         user_content = f"""Question: {question}
 
