@@ -5,26 +5,31 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils/cn';
 
 /**
- * shadcn/ui-pattern button: Radix Slot for polymorphic rendering, CVA for
- * variant composition (design §5.4). Owned in-repo so it can be themed rather
- * than fought.
+ * Neo Brutalism button: heavy outlines, solid offset shadows, immediate interaction.
+ * Hover lifts the control up, press brings it back down. Square corners, bold text.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control text-body-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control font-emphasis uppercase transition-all duration-interaction disabled:pointer-events-none disabled:opacity-50 border-panel brutal-hover',
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        // Primary: yellow poster with black text
+        primary: 'bg-primary text-primary-foreground border-foreground shadow-brutal',
+        // Secondary: violet field with black text
+        secondary: 'bg-secondary text-secondary-foreground border-foreground shadow-brutal',
+        // Destructive: red signal with black text
+        destructive: 'bg-destructive text-destructive-foreground border-foreground shadow-brutal',
+        // Outline: cream/white bg with black border
+        outline: 'border-foreground bg-card text-foreground shadow-brutal',
+        // Ghost: minimal with border only
+        ghost: 'border-foreground bg-transparent text-foreground hover:bg-accent hover:shadow-brutal',
+        // Contrast: white panel for dark backgrounds
+        contrast: 'bg-card text-card-foreground border-foreground shadow-brutal',
       },
       size: {
-        sm: 'h-8 px-3',
-        md: 'h-10 px-4',
-        lg: 'h-12 px-6 text-body',
+        sm: 'h-10 px-4 text-label',
+        md: 'h-12 px-6 text-small',
+        lg: 'h-14 px-8 text-body',
       },
     },
     defaultVariants: {

@@ -3,96 +3,134 @@
 @tailwind utilities;
 
 /**
- * Both themes are authored, not derived (design §5.10). The dark theme uses its own
- * surface ramp and desaturated accents rather than inverting the light theme.
+ * Neo Brutalism Design System
+ * 
+ * Unfolded press sheet with cream paper, yellow emphasis, red signal,
+ * violet field, heavy black outlines, and solid offset shadows.
+ * Host Grotesk with very heavy display weights and uppercase headlines.
  */
+
 @layer base {
   :root {
-    /* System UI stack: the app does not ship a webfont, so naming one here
-     * would silently fall back on most machines. */
-    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
-      Arial, sans-serif;
+    /* Neo Brutalism authoritative tokens */
+    --dp-color-ground: #fff5d6; /* cream paper */
+    --dp-color-ink: #000000; /* black ink */
+    --dp-color-emphasis: #ffed00; /* yellow poster */
+    --dp-color-signal: #ff4332; /* red arrow */
+    --dp-color-field: #d4bdff; /* violet band */
+    --dp-color-contrast: #ffffff; /* white reading areas */
+    
+    --dp-typography-face: "Host Grotesk", sans-serif;
+    --dp-typography-body: 17px;
+    --dp-typography-reading: 16px;
+    --dp-typography-small: 14px;
+    --dp-typography-metadata: 13px;
+    --dp-typography-label: 12px;
+    --dp-typography-reading-weight: 700;
+    --dp-typography-emphasis-weight: 800;
+    --dp-typography-display-weight: 900;
+    --dp-typography-display-tracking: -0.065em;
+    
+    --dp-spacing-gap: 24px;
+    --dp-spacing-gap-compact: 18px;
+    --dp-radius-control: 0;
+    --dp-border-panel: 4px;
+    --dp-border-divider: 3px;
+    --dp-border-annotation: 2px;
+    --dp-motion-interaction: 0s;
+
+    /* Font stacks - Host Grotesk with fallback */
+    --font-sans: "Host Grotesk", ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
 
-    --radius-control: 0.5rem;
-    --radius-surface: 0.75rem;
+    /* Design system mapped to semantic tokens */
+    --radius-control: var(--dp-radius-control);
+    --radius-surface: var(--dp-radius-control);
 
-    --background: 0 0% 100%;
-    --foreground: 224 20% 12%;
+    /* Light theme: cream ground, black outlines, yellow/red/violet accents */
+    --background: 48 100% 92%; /* cream */
+    --foreground: 0 0% 0%; /* black */
 
-    --card: 0 0% 100%;
-    --card-foreground: 224 20% 12%;
+    --card: 0 0% 100%; /* white for reading areas */
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 20% 12%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 221 76% 46%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 55 100% 50%; /* yellow emphasis */
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 220 16% 95%;
-    --secondary-foreground: 224 20% 20%;
+    --secondary: 263 100% 87%; /* violet field */
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 220 16% 96%;
-    --muted-foreground: 220 9% 44%;
+    --muted: 48 100% 92%; /* cream muted */
+    --muted-foreground: 0 0% 30%;
 
-    --accent: 221 70% 96%;
-    --accent-foreground: 221 76% 34%;
+    --accent: 55 100% 50%; /* yellow accent */
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 72% 46%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 4 100% 60%; /* red signal */
+    --destructive-foreground: 0 0% 0%;
 
-    --success: 152 62% 34%;
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 32 88% 42%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
 
-    --info: 208 79% 42%;
+    --info: 0 0% 0%;
     --info-foreground: 0 0% 100%;
 
-    --border: 220 14% 89%;
-    --input: 220 14% 89%;
-    --ring: 221 76% 46%;
+    --border: 0 0% 0%; /* black outlines */
+    --input: 0 0% 0%;
+    --ring: 55 100% 50%; /* yellow focus */
   }
 
   .dark {
-    /* Layered near-neutral darks, never pure black, to reduce halation. */
-    --background: 224 24% 8%;
-    --foreground: 220 16% 94%;
+    /* Dark theme: inverted with deep tones, maintaining brutalist aesthetic */
+    --dp-color-ground: #1a1510;
+    --dp-color-ink: #fff5d6;
+    --dp-color-emphasis: #ffed00;
+    --dp-color-signal: #ff4332;
+    --dp-color-field: #4a3a66;
+    --dp-color-contrast: #0a0a0a;
+    
+    --background: 30 24% 8%;
+    --foreground: 48 100% 92%;
 
-    --card: 224 22% 11%;
-    --card-foreground: 220 16% 94%;
+    --card: 0 0% 6%;
+    --card-foreground: 48 100% 92%;
 
-    --popover: 224 22% 13%;
-    --popover-foreground: 220 16% 94%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 48 100% 92%;
 
-    --primary: 217 82% 66%;
-    --primary-foreground: 224 30% 10%;
+    --primary: 55 100% 50%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 223 18% 18%;
-    --secondary-foreground: 220 16% 92%;
+    --secondary: 263 35% 30%;
+    --secondary-foreground: 48 100% 92%;
 
-    --muted: 223 18% 16%;
-    --muted-foreground: 220 12% 66%;
+    --muted: 30 20% 15%;
+    --muted-foreground: 48 50% 70%;
 
-    --accent: 223 26% 20%;
-    --accent-foreground: 217 82% 78%;
+    --accent: 55 100% 50%;
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 66% 58%;
-    --destructive-foreground: 224 30% 10%;
+    --destructive: 4 100% 60%;
+    --destructive-foreground: 0 0% 0%;
 
-    --success: 152 48% 52%;
-    --success-foreground: 224 30% 10%;
+    --success: 142 60% 45%;
+    --success-foreground: 0 0% 0%;
 
-    --warning: 34 78% 60%;
-    --warning-foreground: 224 30% 10%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
 
-    --info: 208 68% 62%;
-    --info-foreground: 224 30% 10%;
+    --info: 48 100% 92%;
+    --info-foreground: 0 0% 0%;
 
-    --border: 223 16% 22%;
-    --input: 223 16% 22%;
-    --ring: 217 82% 66%;
+    --border: 48 100% 92%;
+    --input: 48 100% 92%;
+    --ring: 55 100% 50%;
   }
 
   * {
@@ -100,15 +138,15 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground font-reading antialiased;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
   }
 
-  /* Focus is a functional affordance, not decoration (design §5.9). */
+  /* Focus is a functional affordance with heavy outline */
   :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply outline-none ring-4 ring-ring ring-offset-2 ring-offset-background;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -120,5 +158,61 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* Neo Brutalism utility classes */
+@layer components {
+  .brutal-display {
+    @apply font-display text-display uppercase leading-tight tracking-display;
+  }
+
+  .brutal-display-lg {
+    @apply font-display text-display-lg uppercase leading-tight tracking-display;
+  }
+
+  .brutal-display-xl {
+    @apply font-display text-display-xl uppercase leading-none tracking-display;
+  }
+
+  .brutal-panel {
+    @apply border-panel border-foreground bg-card shadow-brutal;
+  }
+
+  .brutal-poster {
+    @apply border-panel border-foreground bg-primary text-primary-foreground shadow-brutal;
+  }
+
+  .brutal-field {
+    @apply border-panel border-foreground bg-secondary text-secondary-foreground shadow-brutal;
+  }
+
+  .brutal-signal {
+    @apply border-panel border-foreground bg-destructive text-destructive-foreground shadow-brutal;
+  }
+
+  .brutal-divider {
+    @apply border-t-divider border-foreground;
+  }
+
+  .brutal-outline {
+    @apply border-panel border-foreground;
+  }
+
+  .brutal-label {
+    @apply text-label font-emphasis uppercase;
+  }
+
+  /* Button hover lift effect */
+  .brutal-hover {
+    @apply transition-all duration-interaction;
+  }
+
+  .brutal-hover:hover:not(:disabled) {
+    @apply -translate-y-1 shadow-brutal-hover;
+  }
+
+  .brutal-hover:active:not(:disabled) {
+    @apply translate-y-0 shadow-brutal-sm;
   }
 }

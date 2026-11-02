@@ -21,8 +21,8 @@ export function TopBar(): React.JSX.Element {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b px-6">
-      <Link href="/dashboard" className="text-h3 font-semibold">
+    <header className="brutal-panel flex items-center justify-between px-gap py-4">
+      <Link href="/dashboard" className="text-h2 font-emphasis uppercase">
         {config.appName}
       </Link>
       <div className="flex items-center gap-3">
@@ -30,7 +30,7 @@ export function TopBar(): React.JSX.Element {
         <ThemeToggle />
         {user && (
           <div className="flex items-center gap-3">
-            <span className="text-body-sm text-muted-foreground">{user.name}</span>
+            <span className="text-small font-reading">{user.name}</span>
             <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
               Log out
             </Button>

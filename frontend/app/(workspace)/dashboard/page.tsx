@@ -50,18 +50,18 @@ export default function DashboardPage(): React.JSX.Element {
   }
 
   return (
-    <div className="container flex flex-col gap-6 py-10">
+    <div className="container flex flex-col gap-gap py-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-h1 font-semibold">Dashboard</h1>
-          <p className="text-body-sm text-muted-foreground">
+          <h1 className="brutal-display">Dashboard</h1>
+          <p className="text-reading text-muted-foreground">
             Pick up a research workspace, or start a new one.
           </p>
         </div>
         {loadState === 'ready' && projects.length > 0 && (
           <CreateProjectModal
             onCreated={handleCreated}
-            trigger={<Button type="button">New project</Button>}
+            trigger={<Button type="button" size="md">New project</Button>}
           />
         )}
       </div>
@@ -84,14 +84,14 @@ export default function DashboardPage(): React.JSX.Element {
           action={
             <CreateProjectModal
               onCreated={handleCreated}
-              trigger={<Button type="button">Create your first project</Button>}
+              trigger={<Button type="button" size="lg">Create your first project</Button>}
             />
           }
         />
       )}
 
       {loadState === 'ready' && projects.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-gap sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

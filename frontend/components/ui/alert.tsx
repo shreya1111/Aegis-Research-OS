@@ -4,16 +4,15 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils/cn';
 
 /**
- * Status is conveyed by icon and text as well as colour, never colour alone
- * (design §5.9). Callers supply the icon; this component only sets tone.
+ * Neo Brutalism alert: heavy border with optional colored background
  */
-const alertVariants = cva('flex items-start gap-3 rounded-surface border px-4 py-3 text-body-sm', {
+const alertVariants = cva('flex items-start gap-3 rounded-control border-panel px-4 py-3 shadow-brutal-sm text-small font-reading', {
   variants: {
     variant: {
-      destructive: 'border-destructive/30 bg-destructive/10 text-destructive',
-      warning: 'border-warning/30 bg-warning/10 text-warning',
-      success: 'border-success/30 bg-success/10 text-success',
-      info: 'border-info/30 bg-info/10 text-info',
+      destructive: 'border-foreground bg-destructive/20 text-foreground',
+      warning: 'border-foreground bg-accent/20 text-foreground',
+      success: 'border-foreground bg-success/20 text-foreground',
+      info: 'border-foreground bg-card text-foreground',
     },
   },
   defaultVariants: {
@@ -37,6 +36,7 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
   ),
 );
 Alert.displayName = 'Alert';
+
 export const AlertDescription = forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>

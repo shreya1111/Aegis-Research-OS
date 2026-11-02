@@ -2,10 +2,9 @@ import type { Config } from 'tailwindcss';
 import animate from 'tailwindcss-animate';
 
 /**
- * Semantic design tokens (design §5.4–§5.6).
- *
- * Components reference these token names only — never raw colour values — so both
- * themes are defined once in `app/globals.css`.
+ * Neo Brutalism Design System
+ * Press-sheet aesthetic with cream paper, heavy black outlines, yellow emphasis,
+ * red signals, violet fields, and solid offset shadows.
  */
 const config: Config = {
   darkMode: ['class'],
@@ -13,8 +12,13 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      padding: '1.5rem',
-      screens: { '2xl': '1400px' },
+      padding: 'var(--dp-spacing-gap)',
+      screens: { 
+        sm: '640px',
+        md: '720px',
+        lg: '1050px',
+        xl: '1400px',
+      },
     },
     extend: {
       colors: {
@@ -68,22 +72,49 @@ const config: Config = {
         control: 'var(--radius-control)',
         surface: 'var(--radius-surface)',
       },
+      borderWidth: {
+        panel: 'var(--dp-border-panel)',
+        divider: 'var(--dp-border-divider)',
+        annotation: 'var(--dp-border-annotation)',
+      },
       fontFamily: {
-        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        display: ['2.75rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
-        h1: ['1.875rem', { lineHeight: '1.2' }],
-        h2: ['1.5rem', { lineHeight: '1.3' }],
-        h3: ['1.25rem', { lineHeight: '1.4' }],
-        body: ['1rem', { lineHeight: '1.6' }],
-        'body-sm': ['0.875rem', { lineHeight: '1.5' }],
-        caption: ['0.75rem', { lineHeight: '1.4' }],
+        // Neo Brutalism display scales - heavy and uppercase
+        'display-xl': ['5rem', { lineHeight: '0.95', letterSpacing: 'var(--dp-typography-display-tracking)', fontWeight: 'var(--dp-typography-display-weight)' }],
+        'display-lg': ['3.5rem', { lineHeight: '1', letterSpacing: 'var(--dp-typography-display-tracking)', fontWeight: 'var(--dp-typography-display-weight)' }],
+        display: ['2.5rem', { lineHeight: '1.1', letterSpacing: 'var(--dp-typography-display-tracking)', fontWeight: 'var(--dp-typography-display-weight)' }],
+        h1: ['2rem', { lineHeight: '1.1', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
+        h2: ['1.5rem', { lineHeight: '1.2', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
+        h3: ['1.25rem', { lineHeight: '1.3', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
+        body: ['var(--dp-typography-body)', { lineHeight: '1.5', fontWeight: 'var(--dp-typography-reading-weight)' }],
+        reading: ['var(--dp-typography-reading)', { lineHeight: '1.6', fontWeight: 'var(--dp-typography-reading-weight)' }],
+        small: ['var(--dp-typography-small)', { lineHeight: '1.5', fontWeight: 'var(--dp-typography-reading-weight)' }],
+        metadata: ['var(--dp-typography-metadata)', { lineHeight: '1.4' }],
+        label: ['var(--dp-typography-label)', { lineHeight: '1.4', textTransform: 'uppercase', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
       },
-      maxWidth: {
-        // Constrained measure for generated artifacts (design §5.5).
-        prose: '72ch',
+      fontWeight: {
+        reading: 'var(--dp-typography-reading-weight)',
+        emphasis: 'var(--dp-typography-emphasis-weight)',
+        display: 'var(--dp-typography-display-weight)',
+      },
+      letterSpacing: {
+        display: 'var(--dp-typography-display-tracking)',
+      },
+      spacing: {
+        gap: 'var(--dp-spacing-gap)',
+        'gap-compact': 'var(--dp-spacing-gap-compact)',
+      },
+      boxShadow: {
+        'brutal': '6px 6px 0 0 hsl(var(--foreground))',
+        'brutal-sm': '4px 4px 0 0 hsl(var(--foreground))',
+        'brutal-lg': '8px 8px 0 0 hsl(var(--foreground))',
+        'brutal-hover': '8px 8px 0 0 hsl(var(--foreground))',
+      },
+      transitionDuration: {
+        interaction: 'var(--dp-motion-interaction)',
       },
     },
   },

@@ -1,15 +1,20 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils/cn';
 
+/**
+ * Neo Brutalism badge: compact box with heavy border and optional color fill
+ */
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-caption font-medium',
+  'inline-flex items-center rounded-control border-annotation px-2 py-1 brutal-label font-emphasis',
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-primary text-primary-foreground',
-        secondary: 'border-transparent bg-secondary text-secondary-foreground',
-        destructive: 'border-transparent bg-destructive text-destructive-foreground',
-        outline: 'text-foreground',
+        default: 'border-foreground bg-card text-foreground',
+        primary: 'border-foreground bg-primary text-primary-foreground',
+        secondary: 'border-foreground bg-secondary text-secondary-foreground',
+        destructive: 'border-foreground bg-destructive text-destructive-foreground',
+        accent: 'border-foreground bg-accent text-accent-foreground',
+        outline: 'border-foreground text-foreground',
       },
     },
     defaultVariants: {
