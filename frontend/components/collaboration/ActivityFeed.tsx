@@ -118,7 +118,7 @@ export function ActivityFeed({ projectId }: { projectId: string }): React.JSX.El
                   {ACTION_GLYPHS[entry.entity_type ?? ''] ?? '•'}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-body-sm font-medium break-words">{describe(entry)}</p>
+                  <p className="break-words text-body-sm font-medium">{describe(entry)}</p>
                   <p className="text-body-sm text-muted-foreground">
                     {entry.actor_name ?? 'A former member'} · {formatTimestamp(entry.created_at)}
                   </p>

@@ -188,9 +188,7 @@ async def _run_memory(state: AgentRunState, *, runtime: Runtime[AgentDeps]) -> d
     return await _guarded(_MEMORY, memory_node)(state, runtime.context)
 
 
-async def _run_retrieval(
-    state: AgentRunState, *, runtime: Runtime[AgentDeps]
-) -> dict[str, object]:
+async def _run_retrieval(state: AgentRunState, *, runtime: Runtime[AgentDeps]) -> dict[str, object]:
     return await _guarded(_RETRIEVAL, retrieval_node)(state, runtime.context)
 
 
@@ -206,9 +204,7 @@ async def _run_fact_checker(
     return await _guarded(_FACT_CHECKER, fact_checker_node)(state, runtime.context)
 
 
-async def _run_synthesis(
-    state: AgentRunState, *, runtime: Runtime[AgentDeps]
-) -> dict[str, object]:
+async def _run_synthesis(state: AgentRunState, *, runtime: Runtime[AgentDeps]) -> dict[str, object]:
     return await _guarded(_SYNTHESIS, synthesis_node)(state, runtime.context)
 
 
@@ -272,9 +268,9 @@ def build_agent_graph() -> StateGraph[AgentRunState, AgentDeps, AgentRunState, A
     return graph
 
 
-def compile_agent_graph() -> (
-    CompiledStateGraph[AgentRunState, AgentDeps, AgentRunState, AgentRunState]
-):
+def compile_agent_graph() -> CompiledStateGraph[
+    AgentRunState, AgentDeps, AgentRunState, AgentRunState
+]:
     """Build and compile the graph once; callers reuse the returned object
     across every run (design §6.4: `AgentService` "own[s] the LangGraph
     compiled graph")."""

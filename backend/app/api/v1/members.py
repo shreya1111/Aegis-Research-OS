@@ -105,9 +105,7 @@ async def update_member_role(
     membership_service: MembershipServiceDep,
     activity_service: ActivityServiceDep,
 ) -> ApiResponse[list[MemberRead]]:
-    member = await membership_service.change_role(
-        project, member_id=member_id, role=payload.role
-    )
+    member = await membership_service.change_role(project, member_id=member_id, role=payload.role)
     await activity_service.record(
         project_id=project.id,
         user_id=current_user.id,

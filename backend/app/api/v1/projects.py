@@ -59,9 +59,7 @@ async def list_projects(
     # One query resolves roles for the whole page, so the dashboard can render
     # shared projects differently from owned ones without an N+1 lookup.
     roles = await membership_service.roles_for(projects, user_id=current_user.id)
-    items = [
-        ProjectRead.from_model(project, roles.get(project.id)) for project in projects
-    ]
+    items = [ProjectRead.from_model(project, roles.get(project.id)) for project in projects]
     return paginated(
         items,
         total=total,

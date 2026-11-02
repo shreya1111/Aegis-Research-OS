@@ -97,14 +97,14 @@ export const EDGE_TYPE_LABELS: Record<EdgeType, string> = {
 };
 
 export const NODE_TYPE_COLORS: Record<NodeType, string> = {
-  author: '#3b82f6',    // blue
-  topic: '#10b981',     // emerald
+  author: '#3b82f6', // blue
+  topic: '#10b981', // emerald
   institution: '#f59e0b', // amber
 };
 
 export const EDGE_TYPE_COLORS: Record<EdgeType, string> = {
-  co_author: '#6366f1',              // indigo
-  citation: '#8b5cf6',               // violet
-  topic_membership: '#06b6d4',       // cyan
+  co_author: '#6366f1', // indigo
+  citation: '#8b5cf6', // violet
+  topic_membership: '#06b6d4', // cyan
   institutional_affiliation: '#f97316', // orange
 };

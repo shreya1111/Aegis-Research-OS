@@ -1,7 +1,7 @@
 """Analytics datasets table for Phase 8.
 
 Revision ID: 0008
-Revises: f3f6c804751d  
+Revises: f3f6c804751d
 Create Date: 2026-10-04
 
 Phase 8 introduces analytics/data science capabilities: CSV upload, profiling,
@@ -41,7 +41,7 @@ def upgrade() -> None:
         "analytics_datasets",
         ["project_id", "created_at"],
     )
-    
+
     op.create_table(
         "analytics_analyses",
         sa.Column("id", sa.Uuid(), primary_key=True),

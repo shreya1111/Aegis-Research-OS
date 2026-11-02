@@ -27,13 +27,13 @@ export default function ProjectGraphPage(): React.JSX.Element {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = getAuthToken();
       const [data, stats] = await Promise.all([
         getGraphData(projectId, { token }),
         getGraphStats(projectId, { token }),
       ]);
-      
+
       setGraphData(data);
       setGraphStats(stats);
     } catch (err) {
@@ -44,16 +44,19 @@ export default function ProjectGraphPage(): React.JSX.Element {
     }
   }, [projectId]);
 
-  const handleNodeClick = useCallback(async (nodeId: string) => {
-    try {
-      const token = getAuthToken();
-      const details = await getNodeDetails(projectId, nodeId, { token });
-      setNodeDetails(details);
-    } catch (err) {
-      console.error('Failed to load node details:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load node details');
-    }
-  }, [projectId]);
+  const handleNodeClick = useCallback(
+    async (nodeId: string) => {
+      try {
+        const token = getAuthToken();
+        const details = await getNodeDetails(projectId, nodeId, { token });
+        setNodeDetails(details);
+      } catch (err) {
+        console.error('Failed to load node details:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load node details');
+      }
+    },
+    [projectId],
+  );
 
   const handleCloseDetails = useCallback(() => {
     setNodeDetails(null);
@@ -78,13 +81,13 @@ export default function ProjectGraphPage(): React.JSX.Element {
   if (loading && !graphData) {
     return (
       <div className="container mx-auto py-6">
-        <div className="flex items-center space-x-2 mb-6">
+        <div className="mb-6 flex items-center space-x-2">
           <Shuffle className="h-6 w-6" />
           <h1 className="text-2xl font-bold">Knowledge Graph</h1>
         </div>
         <div className="flex h-96 items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
             <p>Loading knowledge graph...</p>
           </div>
         </div>
@@ -93,7 +96,7 @@ export default function ProjectGraphPage(): React.JSX.Element {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="flex h-screen flex-col">
       {/* Header */}
       <div className="border-b bg-white px-6 py-4">
         <div className="flex items-center justify-between">
@@ -101,7 +104,7 @@ export default function ProjectGraphPage(): React.JSX.Element {
             <Shuffle className="h-6 w-6" />
             <h1 className="text-2xl font-bold">Knowledge Graph</h1>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {/* Stats */}
             {graphStats && (
@@ -113,14 +116,14 @@ export default function ProjectGraphPage(): React.JSX.Element {
                 <div>{graphStats.totalEdges} connections</div>
               </div>
             )}
-            
+
             {/* Actions */}
             <Button variant="outline" onClick={handleRebuildGraph}>
               Rebuild Graph
             </Button>
           </div>
         </div>
-        
+
         {error && (
           <Alert className="mt-4">
             <AlertCircle className="h-4 w-4" />
@@ -130,7 +133,7 @@ export default function ProjectGraphPage(): React.JSX.Element {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex">
+      <div className="flex flex-1">
         {/* Graph Visualization */}
         <div className="flex-1">
           <GraphVisualization

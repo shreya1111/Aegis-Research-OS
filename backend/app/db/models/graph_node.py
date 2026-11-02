@@ -23,15 +23,15 @@ if TYPE_CHECKING:
 
 class NodeType(str, Enum):
     """Types of entities in the knowledge graph."""
-    
+
     AUTHOR = "author"
-    TOPIC = "topic" 
+    TOPIC = "topic"
     INSTITUTION = "institution"
 
 
 class GraphNode(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     """Entity nodes in the knowledge graph.
-    
+
     Represents authors, topics, and institutions extracted from documents
     and external sources, with metadata for display and relationships.
     """
@@ -57,10 +57,8 @@ class GraphNode(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     # Relationships
     project: Mapped[Project] = relationship(back_populates="graph_nodes")
     outgoing_edges: Mapped[list[GraphEdge]] = relationship(
-        foreign_keys="GraphEdge.source_node_id",
-        back_populates="source_node"
+        foreign_keys="GraphEdge.source_node_id", back_populates="source_node"
     )
     incoming_edges: Mapped[list[GraphEdge]] = relationship(
-        foreign_keys="GraphEdge.target_node_id", 
-        back_populates="target_node"
+        foreign_keys="GraphEdge.target_node_id", back_populates="target_node"
     )

@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Download, Trash2, Clock, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import {
+  FileText,
+  Download,
+  Trash2,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Sparkles,
+} from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,11 +41,11 @@ function getStatusIcon(status: Report['status']) {
   switch (status) {
     case 'pending':
     case 'generating':
-      return <Clock className="w-4 h-4" />;
+      return <Clock className="h-4 w-4" />;
     case 'completed':
-      return <CheckCircle className="w-4 h-4" />;
+      return <CheckCircle className="h-4 w-4" />;
     case 'failed':
-      return <AlertCircle className="w-4 h-4" />;
+      return <AlertCircle className="h-4 w-4" />;
   }
 }
 
@@ -79,9 +87,9 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
     try {
       const token = await getValidAccessToken();
       if (!token) throw new Error('Not authenticated');
-      
+
       const blob = await exportReport(reportId, format, token);
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -91,7 +99,7 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
+
       notify('success', `Report exported as ${format.toUpperCase()}`);
     } catch (error: unknown) {
       notify('error', errorMessage(error, 'Export failed'));
@@ -105,9 +113,9 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
     try {
       const token = await getValidAccessToken();
       if (!token) throw new Error('Not authenticated');
-      
+
       const summary = await generateSummary(reportId, token);
-      
+
       // Show summary in alert or modal
       window.alert(`Executive Summary:\n\n${summary}`);
 
@@ -142,7 +150,7 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
 
   if (reports.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
         <h3 className="mt-4 text-lg font-medium">No reports generated yet</h3>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -171,7 +179,7 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
               </Badge>
             </div>
           </CardHeader>
-          
+
           {(report.status === 'completed' || report.status === 'failed') && (
             <CardContent className="pt-0">
               <div className="flex items-center justify-between">
@@ -183,27 +191,23 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
                     Report ready for viewing and export
                   </p>
                 )}
-                
-                <div className="flex items-center gap-2 ml-auto">
+
+                <div className="ml-auto flex items-center gap-2">
                   {report.status === 'completed' && (
                     <>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleGenerateSummary(report.id)}
                         disabled={generatingSummaryId === report.id}
                       >
-                        <Sparkles className="w-4 h-4 mr-1" />
+                        <Sparkles className="mr-1 h-4 w-4" />
                         {generatingSummaryId === report.id ? 'Generating...' : 'Summary'}
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled={exportingId === report.id}
-                          >
-                            <Download className="w-4 h-4 mr-1" />
+                          <Button variant="outline" size="sm" disabled={exportingId === report.id}>
+                            <Download className="mr-1 h-4 w-4" />
                             {exportingId === report.id ? 'Exporting...' : 'Export'}
                           </Button>
                         </DropdownMenuTrigger>
@@ -228,12 +232,8 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
                     </>
                   )}
                   {onDelete && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onDelete(report.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
+                    <Button variant="outline" size="sm" onClick={() => onDelete(report.id)}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>

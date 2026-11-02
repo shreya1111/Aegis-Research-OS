@@ -82,9 +82,7 @@ export function NotificationsMenu(): React.JSX.Element | null {
         try {
           await markNotificationRead(token, notification.id);
           setItems((previous) =>
-            previous.map((item) =>
-              item.id === notification.id ? { ...item, read: true } : item,
-            ),
+            previous.map((item) => (item.id === notification.id ? { ...item, read: true } : item)),
           );
           setUnread((previous) => Math.max(0, previous - 1));
         } catch {

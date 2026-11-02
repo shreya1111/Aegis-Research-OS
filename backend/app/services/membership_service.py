@@ -64,9 +64,7 @@ class MembershipService:
             return None
         return membership.role_value
 
-    async def roles_for(
-        self, projects: list[Project], *, user_id: UUID
-    ) -> dict[UUID, ProjectRole]:
+    async def roles_for(self, projects: list[Project], *, user_id: UUID) -> dict[UUID, ProjectRole]:
         """Resolve the caller's role for several projects at once.
 
         One query covers the invited memberships; ownership is read straight off
@@ -75,9 +73,7 @@ class MembershipService:
         rather than inventing one.
         """
         roles: dict[UUID, ProjectRole] = {
-            project.id: ProjectRole.OWNER
-            for project in projects
-            if project.owner_id == user_id
+            project.id: ProjectRole.OWNER for project in projects if project.owner_id == user_id
         }
         invited_ids = [project.id for project in projects if project.id not in roles]
         if invited_ids:

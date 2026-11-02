@@ -28,17 +28,14 @@ export async function getGraphData(
   const params = new URLSearchParams();
   if (options.nodeType) params.set('nodeType', options.nodeType);
   if (options.edgeType) params.set('edgeType', options.edgeType);
-  
+
   const query = params.toString() ? `?${params.toString()}` : '';
-  
-  return apiRequest<GraphData>(
-    `/projects/${projectId}/graph/data${query}`,
-    {
-      method: 'GET',
-      token: options.token,
-      baseUrl: options.baseUrl,
-    },
-  );
+
+  return apiRequest<GraphData>(`/projects/${projectId}/graph/data${query}`, {
+    method: 'GET',
+    token: options.token,
+    baseUrl: options.baseUrl,
+  });
 }
 
 /**
@@ -48,13 +45,10 @@ export async function getGraphStats(
   projectId: string,
   options: RequestOptions = {},
 ): Promise<GraphStats> {
-  return apiRequest<GraphStats>(
-    `/projects/${projectId}/graph/stats`,
-    {
-      method: 'GET',
-      ...options,
-    },
-  );
+  return apiRequest<GraphStats>(`/projects/${projectId}/graph/stats`, {
+    method: 'GET',
+    ...options,
+  });
 }
 
 /**
@@ -65,13 +59,10 @@ export async function getNodeDetails(
   nodeId: string,
   options: RequestOptions = {},
 ): Promise<NodeDetails> {
-  return apiRequest<NodeDetails>(
-    `/projects/${projectId}/graph/nodes/${nodeId}`,
-    {
-      method: 'GET',
-      ...options,
-    },
-  );
+  return apiRequest<NodeDetails>(`/projects/${projectId}/graph/nodes/${nodeId}`, {
+    method: 'GET',
+    ...options,
+  });
 }
 
 /**
@@ -89,7 +80,7 @@ export async function searchNodes(
   const params = new URLSearchParams();
   params.set('q', query);
   if (options.nodeType) params.set('nodeType', options.nodeType);
-  
+
   return apiRequest<NodeSearchResult[]>(
     `/projects/${projectId}/graph/search?${params.toString()}`,
     {
@@ -108,14 +99,11 @@ export async function createRelationship(
   relationship: CreateRelationshipRequest,
   options: RequestOptions = {},
 ): Promise<{ id: string; message: string }> {
-  return apiRequest<{ id: string; message: string }>(
-    `/projects/${projectId}/graph/relationships`,
-    {
-      method: 'POST',
-      body: relationship,
-      ...options,
-    },
-  );
+  return apiRequest<{ id: string; message: string }>(`/projects/${projectId}/graph/relationships`, {
+    method: 'POST',
+    body: relationship,
+    ...options,
+  });
 }
 
 /**
@@ -126,13 +114,10 @@ export async function deleteNode(
   nodeId: string,
   options: RequestOptions = {},
 ): Promise<{ message: string }> {
-  return apiRequest<{ message: string }>(
-    `/projects/${projectId}/graph/nodes/${nodeId}`,
-    {
-      method: 'DELETE',
-      ...options,
-    },
-  );
+  return apiRequest<{ message: string }>(`/projects/${projectId}/graph/nodes/${nodeId}`, {
+    method: 'DELETE',
+    ...options,
+  });
 }
 
 /**
@@ -143,13 +128,10 @@ export async function deleteRelationship(
   edgeId: string,
   options: RequestOptions = {},
 ): Promise<{ message: string }> {
-  return apiRequest<{ message: string }>(
-    `/projects/${projectId}/graph/relationships/${edgeId}`,
-    {
-      method: 'DELETE',
-      ...options,
-    },
-  );
+  return apiRequest<{ message: string }>(`/projects/${projectId}/graph/relationships/${edgeId}`, {
+    method: 'DELETE',
+    ...options,
+  });
 }
 
 /**
@@ -159,11 +141,8 @@ export async function rebuildGraph(
   projectId: string,
   options: RequestOptions = {},
 ): Promise<{ message: string }> {
-  return apiRequest<{ message: string }>(
-    `/projects/${projectId}/graph/rebuild`,
-    {
-      method: 'POST',
-      ...options,
-    },
-  );
+  return apiRequest<{ message: string }>(`/projects/${projectId}/graph/rebuild`, {
+    method: 'POST',
+    ...options,
+  });
 }

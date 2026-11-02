@@ -78,9 +78,7 @@ class DocumentRepository:
         (``/documents/{id}``). Project-scoped routes must use
         :meth:`get_by_id_for_project` so the tenancy predicate stays in the SQL.
         """
-        result = await self._session.execute(
-            select(Document).where(Document.id == document_id)
-        )
+        result = await self._session.execute(select(Document).where(Document.id == document_id))
         return result.scalar_one_or_none()
 
     async def list_for_project(self, *, project_id: UUID) -> list[Document]:

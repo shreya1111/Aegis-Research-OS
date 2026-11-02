@@ -5,12 +5,7 @@
  */
 
 import React from 'react';
-import { 
-  BaseEdge, 
-  EdgeLabelRenderer, 
-  getSmoothStepPath,
-  type EdgeProps 
-} from 'reactflow';
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from 'reactflow';
 
 import { Badge } from '@/components/ui/badge';
 import { EDGE_TYPE_COLORS, EDGE_TYPE_LABELS } from '@/types/graph';
@@ -29,7 +24,7 @@ export function CustomEdge({
   const edgeType = data?.edgeType || 'co_author';
   const weight = data?.weight || 1;
   const color = EDGE_TYPE_COLORS[edgeType as keyof typeof EDGE_TYPE_COLORS] || '#64748b';
-  
+
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -50,7 +45,7 @@ export function CustomEdge({
           opacity: selected ? 1 : 0.7,
         }}
       />
-      
+
       {selected && (
         <EdgeLabelRenderer>
           <div
@@ -61,9 +56,9 @@ export function CustomEdge({
             }}
             className="nodrag nopan"
           >
-            <Badge 
-              variant="secondary" 
-              className="text-xs bg-white border"
+            <Badge
+              variant="secondary"
+              className="border bg-white text-xs"
               style={{ borderColor: color }}
             >
               {EDGE_TYPE_LABELS[edgeType as keyof typeof EDGE_TYPE_LABELS] || edgeType}

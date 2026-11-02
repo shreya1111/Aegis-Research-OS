@@ -126,9 +126,7 @@ ProjectMemberRepositoryDep = Annotated[
     ProjectMemberRepository, Depends(get_project_member_repository)
 ]
 ActivityRepositoryDep = Annotated[ActivityRepository, Depends(get_activity_repository)]
-NotificationRepositoryDep = Annotated[
-    NotificationRepository, Depends(get_notification_repository)
-]
+NotificationRepositoryDep = Annotated[NotificationRepository, Depends(get_notification_repository)]
 
 
 def get_auth_service(
@@ -151,9 +149,7 @@ def get_membership_service(
     member_repository: ProjectMemberRepositoryDep,
     user_repository: UserRepositoryDep,
 ) -> MembershipService:
-    return MembershipService(
-        member_repository=member_repository, user_repository=user_repository
-    )
+    return MembershipService(member_repository=member_repository, user_repository=user_repository)
 
 
 def get_activity_service(activity_repository: ActivityRepositoryDep) -> ActivityService:
@@ -265,9 +261,7 @@ def get_external_source_service(
     )
 
 
-ExternalSourceServiceDep = Annotated[
-    ExternalSourceService, Depends(get_external_source_service)
-]
+ExternalSourceServiceDep = Annotated[ExternalSourceService, Depends(get_external_source_service)]
 
 
 def get_memory_service(

@@ -68,9 +68,7 @@ class ActivityLog(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     #: Small structured context for display (e.g. ``{"filename": "paper.pdf"}``).
     #: Mapped to the ``metadata`` column the migration created; the attribute is
     #: named ``context`` because ``metadata`` is reserved on declarative classes.
-    context: Mapped[dict[str, Any] | None] = mapped_column(
-        "metadata", JSONB, nullable=True
-    )
+    context: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
 
     #: Eager-loaded so the Activity tab renders actor names without a lazy load
     #: under the async session (which would raise rather than fetch).

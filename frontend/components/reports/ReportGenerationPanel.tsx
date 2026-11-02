@@ -23,7 +23,7 @@ const REPORT_TYPES: Array<{ value: ReportType; label: string; description: strin
   },
   {
     value: 'gap_analysis',
-    label: 'Gap Analysis', 
+    label: 'Gap Analysis',
     description: 'Identify research gaps, contradictions, and future directions',
   },
   {
@@ -110,10 +110,7 @@ export function ReportGenerationPanel(): React.JSX.Element {
                 <div key={type.value} className="flex items-start space-x-2">
                   <RadioGroupItem value={type.value} id={type.value} className="mt-0.5" />
                   <div className="grid gap-1.5 leading-none">
-                    <Label
-                      htmlFor={type.value}
-                      className="text-sm font-medium cursor-pointer"
-                    >
+                    <Label htmlFor={type.value} className="cursor-pointer text-sm font-medium">
                       {type.label}
                     </Label>
                     <p className="text-xs text-muted-foreground">{type.description}</p>
@@ -136,7 +133,7 @@ export function ReportGenerationPanel(): React.JSX.Element {
       <Separator />
 
       <div>
-        <h2 className="text-h3 font-semibold mb-4">Generated Reports</h2>
+        <h2 className="mb-4 text-h3 font-semibold">Generated Reports</h2>
         <ReportList reports={reports} isLoading={isLoading} />
       </div>
     </div>

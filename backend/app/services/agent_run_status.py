@@ -32,9 +32,7 @@ class AgentRunStatusCache:
         self._redis = redis
         self._ttl_seconds = ttl_seconds
 
-    async def set_status(
-        self, run_id: UUID, status: RunStatusValue, *, detail: str = ""
-    ) -> None:
+    async def set_status(self, run_id: UUID, status: RunStatusValue, *, detail: str = "") -> None:
         key = f"{_PREFIX}{run_id}"
         payload = json.dumps({"status": status, "detail": detail})
         try:

@@ -1,6 +1,6 @@
 """Graph edges table (design Phase 7 - knowledge graph).
 
-Represents relationships between entities: co-authorship, citations, 
+Represents relationships between entities: co-authorship, citations,
 topic membership, institutional affiliations.
 """
 
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 class EdgeType(str, Enum):
     """Types of relationships in the knowledge graph."""
-    
+
     CO_AUTHOR = "co_author"
     CITATION = "citation"
     TOPIC_MEMBERSHIP = "topic_membership"
@@ -32,7 +32,7 @@ class EdgeType(str, Enum):
 
 class GraphEdge(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     """Relationship edges in the knowledge graph.
-    
+
     Connects nodes with typed relationships and optional weights
     for graph algorithms and visualization.
     """
@@ -67,10 +67,8 @@ class GraphEdge(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     # Relationships
     project: Mapped[Project] = relationship(back_populates="graph_edges")
     source_node: Mapped[GraphNode] = relationship(
-        foreign_keys=[source_node_id],
-        back_populates="outgoing_edges"
+        foreign_keys=[source_node_id], back_populates="outgoing_edges"
     )
     target_node: Mapped[GraphNode] = relationship(
-        foreign_keys=[target_node_id],
-        back_populates="incoming_edges"
+        foreign_keys=[target_node_id], back_populates="incoming_edges"
     )

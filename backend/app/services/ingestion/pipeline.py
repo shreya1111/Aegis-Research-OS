@@ -132,20 +132,19 @@ class IngestionPipeline:
             await self._documents.update_status(
                 document, status=DocumentStatus.READY, metadata=metadata
             )
-            
+
             # Extract entities for knowledge graph (Phase 7)
             if self._graph_service is not None:
                 try:
                     await self._graph_service.process_document_entities(
-                        project_id=project_id,
-                        document=extracted
+                        project_id=project_id, document=extracted
                     )
                     logger.info(
                         "ingestion.graph_extraction.completed",
                         extra={
                             "event": "ingestion.graph_extraction.completed",
                             "document_id": str(document_id),
-                        }
+                        },
                     )
                 except Exception:
                     # Entity extraction failure should not fail the entire ingestion
@@ -154,9 +153,9 @@ class IngestionPipeline:
                         extra={
                             "event": "ingestion.graph_extraction.failed",
                             "document_id": str(document_id),
-                        }
+                        },
                     )
-            
+
             logger.info(
                 "ingestion.completed",
                 extra={

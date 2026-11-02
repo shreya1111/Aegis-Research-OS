@@ -40,9 +40,7 @@ def _parse_work(work: dict[str, object]) -> ExternalSource:
     published = work.get("published-print")
     if not isinstance(published, dict):
         published = work.get("published-online")
-    date_parts = (
-        published.get("date-parts") if isinstance(published, dict) else None
-    )
+    date_parts = published.get("date-parts") if isinstance(published, dict) else None
     year: int | None = None
     if isinstance(date_parts, list) and date_parts and isinstance(date_parts[0], list):
         first_part = date_parts[0]

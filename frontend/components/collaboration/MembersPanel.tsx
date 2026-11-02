@@ -112,7 +112,10 @@ export function MembersPanel({ projectId, role }: MembersPanelProps): React.JSX.
       setMembers(await removeMember(token, projectId, member.id));
       notify('success', `${member.name} no longer has access.`);
     } catch (caught) {
-      notify('error', caught instanceof ApiError ? caught.message : 'Could not remove that member.');
+      notify(
+        'error',
+        caught instanceof ApiError ? caught.message : 'Could not remove that member.',
+      );
     } finally {
       setIsMutating(false);
     }

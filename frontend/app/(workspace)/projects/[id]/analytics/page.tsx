@@ -67,7 +67,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
         }
       }
     },
-    [projectId, getValidAccessToken]
+    [projectId, getValidAccessToken],
   );
 
   const fetchAnalyses = useCallback(
@@ -81,7 +81,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
         console.error('Failed to fetch analyses:', error);
       }
     },
-    [getValidAccessToken]
+    [getValidAccessToken],
   );
 
   useEffect(() => {
@@ -126,8 +126,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
       notify('success', 'Dataset uploaded successfully');
       await fetchDatasets('refresh');
     } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to upload dataset';
+      const message = error instanceof ApiError ? error.message : 'Failed to upload dataset';
       notify('error', message);
     } finally {
       setIsUploading(false);
@@ -154,8 +153,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
       }
       await fetchDatasets('refresh');
     } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to delete dataset';
+      const message = error instanceof ApiError ? error.message : 'Failed to delete dataset';
       notify('error', message);
     } finally {
       setDeletingId(null);
@@ -196,9 +194,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
   if (loadState === 'error') {
     return (
       <div className="p-6">
-        <Alert variant="destructive">
-          Failed to load analytics. Please refresh the page.
-        </Alert>
+        <Alert variant="destructive">Failed to load analytics. Please refresh the page.</Alert>
       </div>
     );
   }
@@ -206,7 +202,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
   return (
     <div className="flex h-full">
       {/* Left panel: Dataset list */}
-      <div className="w-80 border-r border-neutral-200 dark:border-neutral-800 p-4 space-y-4 overflow-y-auto">
+      <div className="w-80 space-y-4 overflow-y-auto border-r border-neutral-200 p-4 dark:border-neutral-800">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Datasets</h2>
           <input
@@ -216,37 +212,28 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
             className="hidden"
             onChange={handleUpload}
           />
-          <Button
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
+          <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
             {isUploading ? 'Uploading...' : 'Upload CSV'}
           </Button>
         </div>
 
         {datasets.length === 0 ? (
-          <EmptyState
-            title="No datasets yet"
-            description="Upload a CSV file to get started"
-          />
+          <EmptyState title="No datasets yet" description="Upload a CSV file to get started" />
         ) : (
           <div className="space-y-2">
             {datasets.map((dataset) => (
               <div
                 key={dataset.id}
-                className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                className={`cursor-pointer rounded-lg border p-3 transition-colors ${
                   selectedDataset?.id === dataset.id
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-                    : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                    : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900'
                 }`}
                 onClick={() => setSelectedDataset(dataset)}
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {dataset.filename}
-                    </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{dataset.filename}</p>
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
                       {dataset.status === 'profiled' && dataset.row_count
                         ? `${dataset.row_count} rows × ${dataset.column_count} cols`
@@ -259,7 +246,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                       handleDelete(dataset.id);
                     }}
                     disabled={deletingId === dataset.id}
-                    className="ml-2 text-neutral-400 hover:text-red-600 text-xs"
+                    className="ml-2 text-xs text-neutral-400 hover:text-red-600"
                   >
                     {deletingId === dataset.id ? '...' : '×'}
                   </button>
@@ -271,7 +258,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
       </div>
 
       {/* Right panel: Dataset details and analysis */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-6">
         {!selectedDataset ? (
           <EmptyState
             title="Select a dataset"
@@ -281,18 +268,17 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
           <div className="space-y-6">
             {/* Dataset profile */}
             <div>
-              <h3 className="text-lg font-semibold mb-2">Dataset Profile</h3>
+              <h3 className="mb-2 text-lg font-semibold">Dataset Profile</h3>
               {selectedDataset.status === 'pending' && (
                 <Alert variant="info">Profiling dataset...</Alert>
               )}
               {selectedDataset.status === 'failed' && (
                 <Alert variant="destructive">
-                  Profiling failed:{' '}
-                  {String(selectedDataset.profile_data?.error ?? 'Unknown error')}
+                  Profiling failed: {String(selectedDataset.profile_data?.error ?? 'Unknown error')}
                 </Alert>
               )}
               {selectedDataset.status === 'profiled' && selectedDataset.profile_data && (
-                <div className="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-lg space-y-2">
+                <div className="space-y-2 rounded-lg bg-neutral-50 p-4 dark:bg-neutral-900">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-neutral-600 dark:text-neutral-400">Rows:</span>{' '}
@@ -305,8 +291,8 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                   </div>
                   {selectedDataset.profile_data.columns && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium mb-2">Columns:</p>
-                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                      <p className="mb-2 text-sm font-medium">Columns:</p>
+                      <div className="max-h-48 space-y-1 overflow-y-auto">
                         {Object.entries(
                           selectedDataset.profile_data.columns as Record<
                             string,
@@ -315,7 +301,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                         ).map(([name, info]) => (
                           <div
                             key={name}
-                            className="text-xs flex items-center justify-between py-1 px-2 bg-white dark:bg-neutral-800 rounded"
+                            className="flex items-center justify-between rounded bg-white px-2 py-1 text-xs dark:bg-neutral-800"
                           >
                             <span className="font-mono">{name}</span>
                             <span className="text-neutral-600 dark:text-neutral-400">
@@ -333,7 +319,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
             {/* Analysis question */}
             {selectedDataset.status === 'profiled' && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Ask a Question</h3>
+                <h3 className="mb-2 text-lg font-semibold">Ask a Question</h3>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -341,13 +327,10 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                     placeholder="E.g., What is the average age by gender?"
-                    className="flex-1 px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-sm"
+                    className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                     disabled={isAnalyzing}
                   />
-                  <Button
-                    onClick={handleAnalyze}
-                    disabled={!question.trim() || isAnalyzing}
-                  >
+                  <Button onClick={handleAnalyze} disabled={!question.trim() || isAnalyzing}>
                     {isAnalyzing ? 'Analyzing...' : 'Analyze'}
                   </Button>
                 </div>
@@ -356,22 +339,19 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
 
             {/* Analyses list */}
             <div>
-              <h3 className="text-lg font-semibold mb-2">Analyses</h3>
+              <h3 className="mb-2 text-lg font-semibold">Analyses</h3>
               {analyses.length === 0 ? (
-                <EmptyState
-                  title="No analyses yet"
-                  description="Ask a question to get started"
-                />
+                <EmptyState title="No analyses yet" description="Ask a question to get started" />
               ) : (
                 <div className="space-y-4">
                   {analyses.map((analysis) => (
                     <div
                       key={analysis.id}
-                      className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 space-y-3"
+                      className="space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
                     >
                       <div>
-                        <p className="font-medium text-sm">{analysis.question}</p>
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                        <p className="text-sm font-medium">{analysis.question}</p>
+                        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
                           {new Date(analysis.created_at).toLocaleString()}
                         </p>
                       </div>
@@ -389,8 +369,8 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                       {analysis.status === 'completed' && (
                         <>
                           {analysis.explanation && (
-                            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-sm">
-                              <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                            <div className="rounded bg-blue-50 p-3 text-sm dark:bg-blue-950">
+                              <p className="mb-1 font-medium text-blue-900 dark:text-blue-100">
                                 Explanation
                               </p>
                               <p className="text-blue-800 dark:text-blue-200">
@@ -401,10 +381,10 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
 
                           {analysis.analysis_code && (
                             <div>
-                              <p className="text-xs font-medium mb-1 text-neutral-600 dark:text-neutral-400">
+                              <p className="mb-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                                 Generated Code
                               </p>
-                              <pre className="bg-neutral-900 text-neutral-100 p-3 rounded text-xs overflow-x-auto">
+                              <pre className="overflow-x-auto rounded bg-neutral-900 p-3 text-xs text-neutral-100">
                                 {analysis.analysis_code}
                               </pre>
                             </div>
@@ -412,10 +392,10 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
 
                           {analysis.result_data && (
                             <div>
-                              <p className="text-xs font-medium mb-1 text-neutral-600 dark:text-neutral-400">
+                              <p className="mb-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                                 Results
                               </p>
-                              <pre className="bg-neutral-50 dark:bg-neutral-900 p-3 rounded text-xs overflow-x-auto">
+                              <pre className="overflow-x-auto rounded bg-neutral-50 p-3 text-xs dark:bg-neutral-900">
                                 {JSON.stringify(analysis.result_data, null, 2)}
                               </pre>
                             </div>
@@ -423,18 +403,18 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
 
                           {analysis.chart_data && (
                             <div>
-                              <p className="text-xs font-medium mb-1 text-neutral-600 dark:text-neutral-400">
+                              <p className="mb-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                                 Chart
                               </p>
-                              <div className="bg-neutral-50 dark:bg-neutral-900 p-4 rounded">
+                              <div className="rounded bg-neutral-50 p-4 dark:bg-neutral-900">
                                 {analysis.chart_data.image_base64 ? (
                                   <img
                                     src={`data:image/png;base64,${analysis.chart_data.image_base64}`}
                                     alt="Analysis chart"
-                                    className="max-w-full h-auto"
+                                    className="h-auto max-w-full"
                                   />
                                 ) : (
-                                  <pre className="text-xs overflow-x-auto">
+                                  <pre className="overflow-x-auto text-xs">
                                     {JSON.stringify(analysis.chart_data, null, 2)}
                                   </pre>
                                 )}

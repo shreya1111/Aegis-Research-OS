@@ -27,10 +27,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@radix-ui/react-separator';
 import { RefreshCw, Filter, Info } from 'lucide-react';
 
-import type { 
-  GraphData, 
-  GraphNode as GraphNodeType, 
-  NodeType, 
+import type {
+  GraphData,
+  GraphNode as GraphNodeType,
+  NodeType,
   EdgeType,
   NodeDetails,
 } from '@/types/graph';
@@ -90,22 +90,25 @@ export function GraphVisualization({
 
   // Filter nodes and edges based on selected types
   const filteredNodes = useMemo(() => {
-    return nodes.filter(node => {
+    return nodes.filter((node) => {
       if (selectedNodeType === 'all') return true;
       return node.data.nodeType === selectedNodeType;
     });
   }, [nodes, selectedNodeType]);
 
   const filteredEdges = useMemo(() => {
-    return edges.filter(edge => {
+    return edges.filter((edge) => {
       if (selectedEdgeType === 'all') return true;
       return edge.data?.edgeType === selectedEdgeType;
     });
   }, [edges, selectedEdgeType]);
 
-  const onNodeClickHandler = useCallback((_event: React.MouseEvent, node: Node) => {
-    onNodeClick?.(node.id);
-  }, [onNodeClick]);
+  const onNodeClickHandler = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      onNodeClick?.(node.id);
+    },
+    [onNodeClick],
+  );
 
   if (loading) {
     return (
@@ -128,12 +131,13 @@ export function GraphVisualization({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-600 mb-4">
-              No entities found in this project yet. Upload and process some documents to see relationships between authors, topics, and institutions.
+          <div className="py-8 text-center">
+            <p className="mb-4 text-gray-600">
+              No entities found in this project yet. Upload and process some documents to see
+              relationships between authors, topics, and institutions.
             </p>
             <Button onClick={onRefresh} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="mr-2 h-4 w-4" />
               Refresh Graph
             </Button>
           </div>
@@ -158,17 +162,13 @@ export function GraphVisualization({
       >
         <Background />
         <Controls />
-        <MiniMap
-          nodeColor={getNodeColor}
-          maskColor="rgba(0, 0, 0, 0.2)"
-          position="top-right"
-        />
-        
+        <MiniMap nodeColor={getNodeColor} maskColor="rgba(0, 0, 0, 0.2)" position="top-right" />
+
         {/* Filter Panel */}
         <Panel position="top-left">
           <Card className="w-64">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-sm">
                 <Filter className="h-4 w-4" />
                 <span>Filters</span>
               </CardTitle>
@@ -176,13 +176,11 @@ export function GraphVisualization({
             <CardContent className="space-y-3">
               {/* Node Type Filter */}
               <div>
-                <label className="text-xs font-medium text-gray-700 block mb-1">
-                  Node Type
-                </label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">Node Type</label>
                 <select
                   value={selectedNodeType}
                   onChange={(e) => setSelectedNodeType(e.target.value as NodeType | 'all')}
-                  className="w-full text-sm border rounded px-2 py-1"
+                  className="w-full rounded border px-2 py-1 text-sm"
                 >
                   <option value="all">All Types</option>
                   <option value="author">Authors</option>
@@ -193,13 +191,13 @@ export function GraphVisualization({
 
               {/* Edge Type Filter */}
               <div>
-                <label className="text-xs font-medium text-gray-700 block mb-1">
+                <label className="mb-1 block text-xs font-medium text-gray-700">
                   Relationship Type
                 </label>
                 <select
                   value={selectedEdgeType}
                   onChange={(e) => setSelectedEdgeType(e.target.value as EdgeType | 'all')}
-                  className="w-full text-sm border rounded px-2 py-1"
+                  className="w-full rounded border px-2 py-1 text-sm"
                 >
                   <option value="all">All Relationships</option>
                   <option value="co_author">Co-authorship</option>
@@ -223,13 +221,8 @@ export function GraphVisualization({
                 </div>
               </div>
 
-              <Button
-                onClick={onRefresh}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                <RefreshCw className="h-3 w-3 mr-2" />
+              <Button onClick={onRefresh} variant="outline" size="sm" className="w-full">
+                <RefreshCw className="mr-2 h-3 w-3" />
                 Refresh
               </Button>
             </CardContent>

@@ -39,6 +39,7 @@ def _get_graph_service(session: DbSessionDep) -> GraphService:
         entity_extraction_service=entity_extraction_service,
     )
 
+
 #: The graph service is request-scoped (it needs the session), so it is
 #: declared as a dependency type rather than a default argument value.
 GraphServiceDep = Annotated[GraphService, Depends(_get_graph_service)]
@@ -48,9 +49,7 @@ NodeTypeQuery = Annotated[
 EdgeTypeQuery = Annotated[
     EdgeType | None, Query(alias="edgeType", description="Filter by edge type")
 ]
-SearchQuery = Annotated[
-    str, Query(min_length=1, max_length=100, description="Search query")
-]
+SearchQuery = Annotated[str, Query(min_length=1, max_length=100, description="Search query")]
 
 
 @router.get(
@@ -145,11 +144,13 @@ async def create_relationship(
     """Create a manual relationship between two nodes."""
     # Add user information to metadata
     metadata = payload.metadata.copy()
-    metadata.update({
-        "source": "manual",
-        "created_by": str(user.id),
-        "created_by_name": user.name,
-    })
+    metadata.update(
+        {
+            "source": "manual",
+            "created_by": str(user.id),
+            "created_by_name": user.name,
+        }
+    )
 
     edge = await graph_service.create_manual_relationship(
         project_id=project.id,
@@ -160,15 +161,17 @@ async def create_relationship(
         metadata=metadata,
     )
 
-    return ok({
-        "id": str(edge.id),
-        "source_node_id": str(edge.source_node_id),
-        "target_node_id": str(edge.target_node_id),
-        "edge_type": edge.edge_type.value,
-        "weight": edge.weight,
-        "metadata": edge.metadata_,
-        "created_at": edge.created_at.isoformat(),
-    })
+    return ok(
+        {
+            "id": str(edge.id),
+            "source_node_id": str(edge.source_node_id),
+            "target_node_id": str(edge.target_node_id),
+            "edge_type": edge.edge_type.value,
+            "weight": edge.weight,
+            "metadata": edge.metadata_,
+            "created_at": edge.created_at.isoformat(),
+        }
+    )
 
 
 @router.delete(
@@ -239,5 +242,5 @@ async def rebuild_graph(
                 )
             },
             "error": None,
-        }
+        },
     )

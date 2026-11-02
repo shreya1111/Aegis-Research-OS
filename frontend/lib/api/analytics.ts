@@ -30,10 +30,7 @@ export async function uploadDataset(
 /**
  * List all datasets in a project.
  */
-export async function listDatasets(
-  projectId: string,
-  token: string,
-): Promise<AnalyticsDataset[]> {
+export async function listDatasets(projectId: string, token: string): Promise<AnalyticsDataset[]> {
   return await apiRequest<AnalyticsDataset[]>(`/projects/${projectId}/analytics/datasets`, {
     token,
   });
@@ -42,10 +39,7 @@ export async function listDatasets(
 /**
  * Get dataset details including profile.
  */
-export async function getDataset(
-  datasetId: string,
-  token: string,
-): Promise<AnalyticsDataset> {
+export async function getDataset(datasetId: string, token: string): Promise<AnalyticsDataset> {
   return await apiRequest<AnalyticsDataset>(`/analytics/datasets/${datasetId}`, { token });
 }
 
@@ -67,10 +61,7 @@ export async function analyzeDataset(
 /**
  * List all analyses for a dataset.
  */
-export async function listAnalyses(
-  datasetId: string,
-  token: string,
-): Promise<AnalyticsAnalysis[]> {
+export async function listAnalyses(datasetId: string, token: string): Promise<AnalyticsAnalysis[]> {
   return await apiRequest<AnalyticsAnalysis[]>(`/analytics/datasets/${datasetId}/analyses`, {
     token,
   });
@@ -79,10 +70,7 @@ export async function listAnalyses(
 /**
  * Get analysis results.
  */
-export async function getAnalysis(
-  analysisId: string,
-  token: string,
-): Promise<AnalyticsAnalysis> {
+export async function getAnalysis(analysisId: string, token: string): Promise<AnalyticsAnalysis> {
   return await apiRequest<AnalyticsAnalysis>(`/analytics/analyses/${analysisId}`, { token });
 }
 

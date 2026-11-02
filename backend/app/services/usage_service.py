@@ -41,9 +41,7 @@ class UsageService:
         self._traces = trace_repository
 
     async def summary(self, *, project_id: UUID) -> UsageSummary:
-        runs, traces, tokens, cost = await self._traces.summarize_for_project(
-            project_id=project_id
-        )
+        runs, traces, tokens, cost = await self._traces.summarize_for_project(project_id=project_id)
         by_agent = [
             AgentUsage(
                 agent_name=agent_name,

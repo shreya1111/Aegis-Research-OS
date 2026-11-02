@@ -83,9 +83,7 @@ class AgentTraceRepository:
         runs, traces, tokens, cost = result.one()
         return int(runs), int(traces), int(tokens), float(cost)
 
-    async def usage_by_agent(
-        self, *, project_id: UUID
-    ) -> list[tuple[str, int, int, float]]:
+    async def usage_by_agent(self, *, project_id: UUID) -> list[tuple[str, int, int, float]]:
         """Per-agent ``(agent_name, trace_count, tokens, cost)`` for one project."""
         statement = (
             select(

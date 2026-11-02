@@ -40,7 +40,7 @@ async def run_ingestion(document_id: UUID, project_id: UUID, content: bytes) -> 
                 graph_repository=graph_repository,
                 entity_extraction_service=entity_extraction_service,
             )
-            
+
             pipeline = IngestionPipeline(
                 document_repository=DocumentRepository(session),
                 chunk_repository=DocumentChunkRepository(session),

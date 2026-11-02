@@ -14,7 +14,7 @@ import { NODE_TYPE_COLORS } from '@/types/graph';
 export function AuthorNode({ data, selected }: NodeProps): React.JSX.Element {
   return (
     <div
-      className={`px-3 py-2 shadow-md rounded-md bg-white border-2 min-w-[120px] ${
+      className={`min-w-[120px] rounded-md border-2 bg-white px-3 py-2 shadow-md ${
         selected ? 'border-blue-500' : 'border-gray-200'
       }`}
       style={{
@@ -24,19 +24,19 @@ export function AuthorNode({ data, selected }: NodeProps): React.JSX.Element {
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3"
+        className="h-3 w-3"
         style={{ background: NODE_TYPE_COLORS.author }}
       />
-      
+
       <div className="flex items-center space-x-2">
         <div
-          className="flex items-center justify-center w-6 h-6 rounded-full"
+          className="flex h-6 w-6 items-center justify-center rounded-full"
           style={{ backgroundColor: NODE_TYPE_COLORS.author }}
         >
-          <User className="w-3 h-3 text-white" />
+          <User className="h-3 w-3 text-white" />
         </div>
         <div className="flex-1">
-          <div className="font-medium text-sm text-gray-900 truncate max-w-[100px]">
+          <div className="max-w-[100px] truncate text-sm font-medium text-gray-900">
             {data.label}
           </div>
           <Badge variant="secondary" className="text-xs">
@@ -48,7 +48,7 @@ export function AuthorNode({ data, selected }: NodeProps): React.JSX.Element {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3"
+        className="h-3 w-3"
         style={{ background: NODE_TYPE_COLORS.author }}
       />
     </div>

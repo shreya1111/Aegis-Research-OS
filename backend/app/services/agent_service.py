@@ -133,9 +133,7 @@ class AgentService:
             await self._run_status.set_status(run_id, "failed", detail=str(run_id))
             raise
 
-        answer = final_state.get(
-            "final_answer", "The research pipeline did not produce an answer."
-        )
+        answer = final_state.get("final_answer", "The research pipeline did not produce an answer.")
         citations = final_state.get("citations", [])
         degraded = final_state.get("degraded", False)
         degraded_reason = final_state.get("degraded_reason")

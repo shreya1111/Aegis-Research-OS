@@ -121,7 +121,9 @@ async def test_graph_rebuild_endpoint(client: AsyncClient) -> None:
     token = await _register_and_login(client, email="graph@example.com")
     project_id = await _create_project(client, token)
 
-    response = await client.post(f"/api/v1/projects/{project_id}/graph/rebuild", headers=_auth(token))
+    response = await client.post(
+        f"/api/v1/projects/{project_id}/graph/rebuild", headers=_auth(token)
+    )
 
     assert response.status_code == 202
     body = response.json()
@@ -257,9 +259,7 @@ async def test_cross_project_access_is_not_found(client: AsyncClient) -> None:
     stranger = await _register_and_login(client, email="stranger@example.com", name="Stranger")
     project_id = await _create_project(client, owner)
 
-    foreign = await client.get(
-        f"/api/v1/projects/{project_id}/graph/data", headers=_auth(stranger)
-    )
+    foreign = await client.get(f"/api/v1/projects/{project_id}/graph/data", headers=_auth(stranger))
     missing = await client.get(
         f"/api/v1/projects/{uuid.uuid4()}/graph/data", headers=_auth(stranger)
     )
@@ -280,7 +280,9 @@ async def test_viewer_cannot_mutate_the_graph(client: AsyncClient) -> None:
     )
     assert invite.status_code == 201
 
-    rebuild = await client.post(f"/api/v1/projects/{project_id}/graph/rebuild", headers=_auth(viewer))
+    rebuild = await client.post(
+        f"/api/v1/projects/{project_id}/graph/rebuild", headers=_auth(viewer)
+    )
     delete = await client.delete(
         f"/api/v1/projects/{project_id}/graph/nodes/{uuid.uuid4()}", headers=_auth(viewer)
     )

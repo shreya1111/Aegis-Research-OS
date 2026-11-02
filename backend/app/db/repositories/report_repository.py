@@ -53,9 +53,7 @@ class ReportRepository:
     async def list_for_project(self, project_id: UUID) -> list[Report]:
         """List all reports for a project, ordered by creation time descending."""
         stmt = (
-            select(Report)
-            .where(Report.project_id == project_id)
-            .order_by(Report.created_at.desc())
+            select(Report).where(Report.project_id == project_id).order_by(Report.created_at.desc())
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

@@ -44,7 +44,7 @@ export async function exportReport(
     `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/reports/${reportId}/export?format=${format}`,
     {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-    }
+    },
   );
 
   if (!response.ok) {
@@ -54,10 +54,7 @@ export async function exportReport(
   return await response.blob();
 }
 
-export async function generateSummary(
-  reportId: string,
-  token?: string,
-): Promise<string> {
+export async function generateSummary(reportId: string, token?: string): Promise<string> {
   return await apiRequest<string>(`/reports/${reportId}/summary`, {
     method: 'POST',
     token,

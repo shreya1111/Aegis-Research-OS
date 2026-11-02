@@ -97,8 +97,7 @@ export async function apiRequest<TData>(
     response = await fetch(buildUrl(path, versioned, baseUrl), {
       ...init,
       headers: buildHeaders(options),
-      body:
-        body === undefined || body instanceof FormData ? body : JSON.stringify(body),
+      body: body === undefined || body instanceof FormData ? body : JSON.stringify(body),
     });
   } catch {
     throw new ApiError({

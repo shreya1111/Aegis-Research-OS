@@ -68,9 +68,7 @@ async def run_report_generation(
                 project_id=project_id,
                 user_id=user_id,
                 action=(
-                    ActivityAction.REPORT_GENERATED
-                    if succeeded
-                    else ActivityAction.REPORT_FAILED
+                    ActivityAction.REPORT_GENERATED if succeeded else ActivityAction.REPORT_FAILED
                 ),
                 entity_type="report",
                 entity_id=report_id,
