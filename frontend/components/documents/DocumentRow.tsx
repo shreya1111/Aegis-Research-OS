@@ -70,7 +70,7 @@ export function DocumentRow({
       </div>
 
       {expanded && (
-        <div className="space-y-3 border-t p-4 text-body-sm">
+        <div className="text-body-sm space-y-3 border-t p-4">
           {document.status === 'failed' && metadata.failure_reason && (
             <Alert variant="destructive">{metadata.failure_reason}</Alert>
           )}

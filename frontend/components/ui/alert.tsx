@@ -6,19 +6,22 @@ import { cn } from '@/lib/utils/cn';
 /**
  * Neo Brutalism alert: heavy border with optional colored background
  */
-const alertVariants = cva('flex items-start gap-3 rounded-control border-panel px-4 py-3 shadow-brutal-sm text-small font-reading', {
-  variants: {
-    variant: {
-      destructive: 'border-foreground bg-destructive/20 text-foreground',
-      warning: 'border-foreground bg-accent/20 text-foreground',
-      success: 'border-foreground bg-success/20 text-foreground',
-      info: 'border-foreground bg-card text-foreground',
+const alertVariants = cva(
+  'flex items-start gap-3 rounded-control border-panel px-4 py-3 shadow-brutal-sm text-small font-reading',
+  {
+    variants: {
+      variant: {
+        destructive: 'border-foreground bg-destructive/20 text-foreground',
+        warning: 'border-foreground bg-accent/20 text-foreground',
+        success: 'border-foreground bg-success/20 text-foreground',
+        info: 'border-foreground bg-card text-foreground',
+      },
+    },
+    defaultVariants: {
+      variant: 'info',
     },
   },
-  defaultVariants: {
-    variant: 'info',
-  },
-});
+);
 
 export interface AlertProps
   extends React.HTMLAttributes<HTMLDivElement>,

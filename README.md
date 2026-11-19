@@ -30,7 +30,7 @@ Three commitments shape the system:
 
 | Layer | Choice |
 | --- | --- |
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS |
 | Backend | FastAPI, Python 3.11+, Pydantic v2 |
 | Database | PostgreSQL 16 with pgvector — relational data, embeddings, and full-text search |
 | Cache | Redis — response cache, external-source cache, rate limiting, run status |
@@ -49,7 +49,7 @@ git clone <repository-url>
 cd aegis-research-os
 
 # Create .env from the documented contract, then set POSTGRES_PASSWORD
-cp deployment/.env.example .env
+cp .env.example .env
 
 docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
 ```
@@ -111,7 +111,7 @@ docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev
 
 ## Configuration
 
-`deployment/.env.example` is the configuration contract — every variable documented
+`.env.example` is the configuration contract (`deployment/.env.example` is an identical copy used by the setup scripts) — every variable documented
 with a placeholder, extended by the phase that introduces it. `.env` is gitignored and
 must never be committed. Secrets are read only through the typed settings object in
 `backend/app/core/config.py`; a missing or malformed value fails at startup rather
@@ -121,7 +121,7 @@ than mid-request. Only non-sensitive `NEXT_PUBLIC_`-prefixed values reach the br
 
 ```
 aegis-research-os/
-├── frontend/          Next.js 14 App Router — app/ components/ lib/ types/ tests/
+├── frontend/          Next.js 15 App Router — app/ components/ lib/ types/ tests/
 ├── backend/           FastAPI — app/{api,agents,core,db,schemas,services,workers}, tests/
 ├── docs/              Architecture, schema, agent roster, API contract
 ├── deployment/        Compose files, Dockerfiles, reverse proxy, .env.example
@@ -137,10 +137,19 @@ aegis-research-os/
 - Uniform error envelope: stable codes and safe messages outward, detail to logs only.
 - Structured JSON logs correlated by `request_id`; passwords, tokens, keys, and full
   document text are never logged.
-- **Known advisory:** the pinned Next.js 14 line has open high-severity advisories
-  with no patched 14.x release. The framework major is fixed by the architecture, so
-  CI fails on critical findings and reports the remainder rather than suppressing
-  them. Resolving them requires a framework major upgrade.
+- **Dependency audits:** the frontend runs on the maintained Next.js 15 line. CI fails
+  on critical `npm audit` and `pip-audit` findings and prints the remainder rather than
+  suppressing them.
+- **Token storage:** the browser keeps access and refresh tokens in `localStorage`
+  (design §9.2 accepts this for the MVP). An XSS bug would expose them; the short
+  access-token TTL and server-side revocation limit the damage. Moving to httpOnly
+  cookies is the planned hardening step.
+- **Analytics sandbox:** AI-generated analysis code runs in a resource-limited child
+  process. The memory, CPU, and file-size caps need POSIX, so the backend refuses to
+  run generated code on a non-POSIX host when `ENVIRONMENT=production`.
+- **Background jobs:** ingestion, reports, and analytics use FastAPI `BackgroundTasks`,
+  which are not durable across a restart. Their status is stored in the database so a
+  stuck job is visible and can be re-run (design §R18).
 
 ## Licence
 

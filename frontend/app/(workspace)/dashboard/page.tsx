@@ -61,7 +61,11 @@ export default function DashboardPage(): React.JSX.Element {
         {loadState === 'ready' && projects.length > 0 && (
           <CreateProjectModal
             onCreated={handleCreated}
-            trigger={<Button type="button" size="md">New project</Button>}
+            trigger={
+              <Button type="button" size="md">
+                New project
+              </Button>
+            }
           />
         )}
       </div>
@@ -84,7 +88,11 @@ export default function DashboardPage(): React.JSX.Element {
           action={
             <CreateProjectModal
               onCreated={handleCreated}
-              trigger={<Button type="button" size="lg">Create your first project</Button>}
+              trigger={
+                <Button type="button" size="lg">
+                  Create your first project
+                </Button>
+              }
             />
           }
         />

@@ -22,7 +22,8 @@ const buttonVariants = cva(
         // Outline: cream/white bg with black border
         outline: 'border-foreground bg-card text-foreground shadow-brutal',
         // Ghost: minimal with border only
-        ghost: 'border-foreground bg-transparent text-foreground hover:bg-accent hover:shadow-brutal',
+        ghost:
+          'border-foreground bg-transparent text-foreground hover:bg-accent hover:shadow-brutal',
         // Contrast: white panel for dark backgrounds
         contrast: 'bg-card text-card-foreground border-foreground shadow-brutal',
       },

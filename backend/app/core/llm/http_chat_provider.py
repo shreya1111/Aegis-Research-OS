@@ -59,6 +59,12 @@ class HttpChatCompletionsProvider:
         self._cost_per_1k_output = cost_per_1k_output_tokens
         self._circuit_breaker = circuit_breaker
         self._provider_name = provider_name
+        # OpenAI's current models reject ``max_tokens`` and require
+        # ``max_completion_tokens``; other OpenAI-compatible hosts (SambaNova)
+        # still expect ``max_tokens``.
+        self._max_tokens_field = (
+            "max_completion_tokens" if provider_name == "openai" else "max_tokens"
+        )
 
     def _estimate_cost(self, tokens_in: int, tokens_out: int) -> float:
         return (tokens_in / 1000) * self._cost_per_1k_input + (
@@ -78,7 +84,7 @@ class HttpChatCompletionsProvider:
         payload: dict[str, object] = {
             "model": model,
             "messages": [message.model_dump() for message in messages],
-            "max_tokens": max_tokens,
+            self._max_tokens_field: max_tokens,
         }
         if tools:
             payload["tools"] = tools

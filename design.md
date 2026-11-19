@@ -387,7 +387,7 @@ This is a deliberate choice grounded in the source analysis: five infrastructure
 
 ```mermaid
 flowchart TB
-    U[User Browser] --> FE[Next.js 14 Frontend<br/>App Router · TypeScript · Tailwind · shadcn/ui]
+    U[User Browser] --> FE[Next.js 15 Frontend<br/>App Router · TypeScript · Tailwind · shadcn/ui]
     FE --> API[FastAPI Backend<br/>Python 3.11+ · Pydantic v2]
 
     API --> AUTH[Auth Service<br/>JWT · bcrypt]
@@ -2122,7 +2122,7 @@ PaaS variant: deploy backend and frontend as separate services, attach a managed
 
 ```
 aegis-research-os/
-├── frontend/                        # Next.js 14 (App Router) + TypeScript
+├── frontend/                        # Next.js 15 (App Router) + TypeScript
 │   ├── app/                         # Routes; folder = route segment
 │   │   ├── (marketing)/             # Public landing page
 │   │   ├── (auth)/                  # /login, /register — auth shell layout
@@ -2607,7 +2607,7 @@ Assumptions made while producing this design. Each is stated so it can be challe
 
 | # | Assumption |
 |---|---|
-| A6 | The declared stack is fixed unless a deviation is explicitly justified: Next.js 14 App Router + TypeScript + Tailwind + shadcn/ui + Framer Motion; FastAPI (Python 3.11+) + SQLAlchemy 2.0 + Alembic + Pydantic v2; PostgreSQL 16 + pgvector; Redis; LangGraph. |
+| A6 | The declared stack is fixed unless a deviation is explicitly justified: Next.js 15 App Router + TypeScript + Tailwind + shadcn/ui + Framer Motion; FastAPI (Python 3.11+) + SQLAlchemy 2.0 + Alembic + Pydantic v2; PostgreSQL 16 + pgvector; Redis; LangGraph. |
 | A7 | pgvector performs adequately for project-scale corpora (tens of documents, thousands of chunks). A dedicated vector database is unnecessary at this scale. |
 | A8 | Postgres full-text search is an acceptable substitute for a dedicated BM25 engine as the keyword half of hybrid retrieval. |
 | A9 | Reciprocal rank fusion is preferable to score normalisation because cosine similarity and `ts_rank` are not comparably scaled and normalisation would need per-corpus tuning. |

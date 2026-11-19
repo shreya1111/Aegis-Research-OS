@@ -105,11 +105,11 @@ export function ChatPanel(): React.JSX.Element {
             {turns.length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-surface border border-dashed px-6 py-16 text-center">
                 <h3 className="text-h3 font-semibold">Ask a research question</h3>
-                <p className="max-w-md text-body-sm text-muted-foreground">
+                <p className="text-body-sm max-w-md text-muted-foreground">
                   Simple factual questions run a fast retrieval-and-answer pass. A multi-part
                   request — try one of these — dispatches the full multi-agent pipeline instead:
                 </p>
-                <ul className="flex flex-col gap-1 text-body-sm text-muted-foreground">
+                <ul className="text-body-sm flex flex-col gap-1 text-muted-foreground">
                   <li>&ldquo;Summarise the methodology across my uploaded papers.&rdquo;</li>
                   <li>&ldquo;Compare approach A and approach B and identify open gaps.&rdquo;</li>
                   <li>&ldquo;What does the literature say about X, with citations?&rdquo;</li>
@@ -121,20 +121,20 @@ export function ChatPanel(): React.JSX.Element {
                   key={turn.id}
                   className={
                     turn.role === 'user'
-                      ? 'ml-auto max-w-[80%] rounded-surface bg-primary px-4 py-2 text-body-sm text-primary-foreground'
-                      : 'mr-auto max-w-[80%] rounded-surface border bg-card px-4 py-3 text-body-sm'
+                      ? 'text-body-sm ml-auto max-w-[80%] rounded-surface bg-primary px-4 py-2 text-primary-foreground'
+                      : 'text-body-sm mr-auto max-w-[80%] rounded-surface border bg-card px-4 py-3'
                   }
                 >
                   {turn.role === 'assistant' ? (
                     <>
                       <StreamingMessage content={turn.content} citations={turn.citations} />
                       {turn.citationWarning && (
-                        <p className="mt-2 text-caption text-warning">
+                        <p className="text-caption mt-2 text-warning">
                           Some citations in this answer could not be fully verified.
                         </p>
                       )}
                       {turn.pipeline === 'agent' && (
-                        <p className="mt-2 text-caption text-muted-foreground">
+                        <p className="text-caption mt-2 text-muted-foreground">
                           Answered by the multi-agent research pipeline — see the trace panel for
                           each step.
                         </p>
@@ -148,7 +148,7 @@ export function ChatPanel(): React.JSX.Element {
             )}
 
             {isSubmitting && (
-              <div className="mr-auto max-w-[80%] rounded-surface border bg-card px-4 py-3 text-body-sm text-muted-foreground">
+              <div className="text-body-sm mr-auto max-w-[80%] rounded-surface border bg-card px-4 py-3 text-muted-foreground">
                 Thinking…
               </div>
             )}

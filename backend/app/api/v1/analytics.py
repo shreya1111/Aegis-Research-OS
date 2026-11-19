@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Annotated
@@ -235,7 +236,7 @@ async def analyze_dataset(
     await session.commit()
 
     # Run the analysis in the background, in its own session (design §6.7).
-    csv_content = Path(dataset.file_path).read_bytes()
+    csv_content = await asyncio.to_thread(Path(dataset.file_path).read_bytes)
     background_tasks.add_task(
         run_analysis,
         analysis_id=analysis.id,
@@ -322,7 +323,7 @@ async def delete_dataset(
 
     # Delete file
     try:
-        Path(dataset.file_path).unlink(missing_ok=True)
+        await asyncio.to_thread(Path(dataset.file_path).unlink, missing_ok=True)
     except Exception as e:
         logger.error(f"Failed to delete dataset file: {e}")
 

@@ -10,10 +10,6 @@ export const Label = forwardRef<
   React.ComponentRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => (
-  <LabelPrimitive.Root
-    ref={ref}
-    className={cn('brutal-label', className)}
-    {...props}
-  />
+  <LabelPrimitive.Root ref={ref} className={cn('brutal-label', className)} {...props} />
 ));
 Label.displayName = 'Label';

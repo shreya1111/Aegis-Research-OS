@@ -262,7 +262,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
         </div>
 
         {datasets.length === 0 ? (
-          <p className="rounded-surface border border-dashed px-4 py-6 text-center text-body-sm text-muted-foreground">
+          <p className="text-body-sm rounded-surface border border-dashed px-4 py-6 text-center text-muted-foreground">
             No datasets yet. Upload a CSV to profile it.
           </p>
         ) : (
@@ -283,10 +283,10 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                     aria-current={selected ? 'true' : undefined}
                     className="min-w-0 flex-1 rounded-control px-2 py-1 text-left"
                   >
-                    <span className="block truncate text-body-sm font-medium">
+                    <span className="text-body-sm block truncate font-medium">
                       {dataset.filename}
                     </span>
-                    <span className="block text-caption text-muted-foreground">
+                    <span className="text-caption block text-muted-foreground">
                       {datasetSummary(dataset)}
                     </span>
                   </button>
@@ -339,7 +339,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
 
               {selectedDataset.status === 'profiled' && selectedDataset.profile_data && (
                 <div className="flex flex-col gap-4 rounded-surface border bg-muted/40 p-4">
-                  <dl className="grid grid-cols-2 gap-4 text-body-sm">
+                  <dl className="text-body-sm grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-0.5">
                       <dt className="text-caption text-muted-foreground">Rows</dt>
                       <dd className="font-medium">
@@ -359,7 +359,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                         {Object.entries(columns).map(([name, info]) => (
                           <div
                             key={name}
-                            className="flex items-center justify-between gap-3 border-b px-2 py-1 text-caption last:border-0"
+                            className="text-caption flex items-center justify-between gap-3 border-b px-2 py-1 last:border-0"
                           >
                             <span className="truncate font-mono">{name}</span>
                             <span className="shrink-0 text-muted-foreground">{info.dtype}</span>
@@ -401,7 +401,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
               <h2 className="text-h3 font-semibold">Analyses</h2>
 
               {analyses.length === 0 ? (
-                <p className="rounded-surface border border-dashed px-4 py-6 text-center text-body-sm text-muted-foreground">
+                <p className="text-body-sm rounded-surface border border-dashed px-4 py-6 text-center text-muted-foreground">
                   No analyses yet. Ask a question above to start one.
                 </p>
               ) : (
@@ -442,7 +442,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                               <p className="text-caption font-medium text-muted-foreground">
                                 Generated code
                               </p>
-                              <pre className="overflow-x-auto rounded-control bg-muted p-3 font-mono text-caption">
+                              <pre className="text-caption overflow-x-auto rounded-control bg-muted p-3 font-mono">
                                 {analysis.analysis_code}
                               </pre>
                             </div>
@@ -453,7 +453,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                               <p className="text-caption font-medium text-muted-foreground">
                                 Results
                               </p>
-                              <pre className="overflow-x-auto rounded-control bg-muted p-3 font-mono text-caption">
+                              <pre className="text-caption overflow-x-auto rounded-control bg-muted p-3 font-mono">
                                 {JSON.stringify(analysis.result_data, null, 2)}
                               </pre>
                             </div>
@@ -473,7 +473,7 @@ export default function ProjectAnalyticsPage(): React.JSX.Element {
                                     className="h-auto max-w-full"
                                   />
                                 ) : (
-                                  <pre className="overflow-x-auto font-mono text-caption">
+                                  <pre className="text-caption overflow-x-auto font-mono">
                                     {JSON.stringify(analysis.chart_data, null, 2)}
                                   </pre>
                                 )}

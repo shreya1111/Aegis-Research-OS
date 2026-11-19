@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from app.core.config import get_settings
 from app.core.errors import ValidationError
 from app.services.analytics_service import AnalyticsService
 
@@ -56,3 +57,35 @@ async def test_executes_harmless_analysis_in_isolation(service: AnalyticsService
 
     assert result == {"mean": 2.0, "rows": 2}
     assert chart is None
+
+
+@pytest.mark.unit
+async def test_refuses_to_run_without_resource_limits_in_production(
+    service: AnalyticsService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(AnalyticsService, "_resource_limits_supported", staticmethod(lambda: False))
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("JWT_SECRET", "a-production-secret-that-is-long-enough")
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(ValidationError):
+            await service._execute_analysis_code("result['x'] = 1", b"value\n1\n")
+    finally:
+        get_settings.cache_clear()
+
+
+@pytest.mark.unit
+async def test_runs_without_resource_limits_outside_production(
+    service: AnalyticsService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(AnalyticsService, "_resource_limits_supported", staticmethod(lambda: False))
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    get_settings.cache_clear()
+    try:
+        result, _ = await service._execute_analysis_code(
+            "result['rows'] = int(len(df))", b"value\n1\n"
+        )
+    finally:
+        get_settings.cache_clear()
+
+    assert result == {"rows": 1}

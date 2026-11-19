@@ -19,7 +19,7 @@ export function ProjectCard({ project }: { project: Project }): React.JSX.Elemen
           <CardTitle className="line-clamp-1">{project.title}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <p className="line-clamp-2 text-body-sm text-muted-foreground">
+          <p className="text-body-sm line-clamp-2 text-muted-foreground">
             {project.description ?? 'No description yet.'}
           </p>
           <p className="text-caption text-muted-foreground">

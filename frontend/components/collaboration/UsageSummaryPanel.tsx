@@ -76,7 +76,7 @@ export function UsageSummaryPanel({ projectId }: { projectId: string }): React.J
 
             {usage && usage.by_agent.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-body-sm">
+                <table className="text-body-sm w-full">
                   <caption className="sr-only">Usage by agent</caption>
                   <thead>
                     <tr className="border-b text-left text-muted-foreground">

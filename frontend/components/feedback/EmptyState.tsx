@@ -12,7 +12,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps): Rea
   return (
     <div className="flex flex-col items-center gap-3 rounded-surface border border-dashed px-6 py-16 text-center">
       <h3 className="text-h3 font-semibold">{title}</h3>
-      <p className="max-w-sm text-body-sm text-muted-foreground">{description}</p>
+      <p className="text-body-sm max-w-sm text-muted-foreground">{description}</p>
       {action}
     </div>
   );

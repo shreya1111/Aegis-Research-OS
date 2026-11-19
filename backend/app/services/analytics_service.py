@@ -17,6 +17,7 @@ from uuid import UUID
 
 import pandas as pd
 
+from app.core.config import get_settings
 from app.core.errors import ValidationError
 from app.core.llm.provider import LLMProvider, Message
 from app.db.repositories.analytics_repository import AnalyticsRepository
@@ -217,6 +218,20 @@ class AnalyticsService:
         """
         self._validate_code_safety(code)
 
+        if not self._resource_limits_supported():
+            # The CPU, memory and file-size caps only exist on POSIX. Fail closed
+            # in production; allow local development on Windows with a warning.
+            if get_settings().is_production:
+                logger.error(
+                    "analytics.sandbox_unavailable",
+                    extra={"event": "analytics.sandbox_unavailable", "os_name": os.name},
+                )
+                raise ValidationError("Analysis code cannot be run safely on this host.")
+            logger.warning(
+                "analytics.sandbox_limits_unavailable",
+                extra={"event": "analytics.sandbox_limits_unavailable", "os_name": os.name},
+            )
+
         with tempfile.TemporaryDirectory(prefix="aegis-analysis-") as work_dir:
             work_path = Path(work_dir)
             (work_path / "data.csv").write_bytes(csv_content)
@@ -302,6 +317,11 @@ print(json.dumps({'result': result, 'chart': chart}, default=str))
             }
         )
         return env
+
+    @staticmethod
+    def _resource_limits_supported() -> bool:
+        """Whether this host can apply the child-process resource caps."""
+        return os.name == "posix"
 
     @staticmethod
     def _child_limits_preamble() -> str:

@@ -12,7 +12,7 @@ export function TraceMetrics({ steps }: TraceMetricsProps): React.JSX.Element {
   const totalLatencyMs = steps.reduce((sum, step) => sum + step.latency_ms, 0);
 
   return (
-    <dl className="grid grid-cols-3 gap-2 rounded-surface border bg-muted/40 px-3 py-2 text-center text-caption">
+    <dl className="text-caption grid grid-cols-3 gap-2 rounded-surface border bg-muted/40 px-3 py-2 text-center">
       <div>
         <dt className="text-muted-foreground">Steps</dt>
         <dd className="font-medium">{steps.length}</dd>

@@ -43,7 +43,7 @@ export function SideNav({ projectId, onNavigate }: SideNavProps): React.JSX.Elem
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex items-center gap-3 rounded-control px-3 py-2 text-body-sm transition-colors',
+              'text-body-sm flex items-center gap-3 rounded-control px-3 py-2 transition-colors',
               active
                 ? 'bg-primary/10 font-medium text-primary'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',

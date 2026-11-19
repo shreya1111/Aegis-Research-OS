@@ -49,6 +49,10 @@ htmlcov/
 .tox/
 .nox/
 .hypothesis/
+.pytype/
+.pyre/
+.ipynb_checkpoints/
+pip-wheel-metadata/
 
 # ---------------------------------------------------------------------------
 # Node / Next.js
@@ -60,6 +64,13 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .eslintcache
+.vercel/
+.swc/
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+*.tgz
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -81,6 +92,41 @@ uploads/
 model-cache/
 *.log
 logs/
+# Uploaded documents and datasets (default DATA_DIR=./data, relative to backend/)
+/data/
+/backend/data/
+# Scratch directories from analytics sandbox runs and ad-hoc local files
+aegis-analysis-*/
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+*.sqlite3
+*.db
+
+# ---------------------------------------------------------------------------
+# TLS material for the production reverse proxy (mounted by docker-compose.prod.yml)
+# ---------------------------------------------------------------------------
+deployment/proxy/certs/
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+.env*.local
+secrets/
+
+# ---------------------------------------------------------------------------
+# Third-party tool output and imported artefacts
+# ---------------------------------------------------------------------------
+graphify-out/
+.cloud-attachments/
+.freebuff/
+# Kiro IDE: local MCP configuration can hold tokens. Specs, steering and hooks
+# under .kiro/ are not ignored, so they can be shared.
+.kiro/settings/
 
 # ---------------------------------------------------------------------------
 # Editors / OS

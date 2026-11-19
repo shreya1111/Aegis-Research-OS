@@ -38,7 +38,7 @@ export function DocumentStatusBadge({ status }: { status: DocumentStatus }): Rea
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-caption font-medium',
+        'text-caption inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-medium',
         style.className,
       )}
     >

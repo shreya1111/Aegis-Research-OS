@@ -7,7 +7,7 @@ authors, topics, institutions with their metadata and relationships.
 from __future__ import annotations
 
 import uuid
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import ForeignKey, Index, String
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from app.db.models.project import Project
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     """Types of entities in the knowledge graph."""
 
     AUTHOR = "author"

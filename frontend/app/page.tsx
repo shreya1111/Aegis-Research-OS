@@ -75,10 +75,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           <div className="brutal-field relative -mt-6 px-8 py-8 lg:px-12">
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
               <div className="lg:col-span-8 lg:col-start-1">
-                <p className="text-reading max-w-[60ch]">
+                <p className="max-w-[60ch] text-reading">
                   {config.appName} ingests your documents, retrieves evidence from them and the open
-                  academic web, and produces cited research artifacts — with every claim traceable to
-                  a source.
+                  academic web, and produces cited research artifacts — with every claim traceable
+                  to a source.
                 </p>
               </div>
               <div className="flex flex-col gap-3 lg:col-span-4">
@@ -201,9 +201,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           <div className="grid grid-cols-2 gap-8 md:grid-cols-12">
             <div className="col-span-2 space-y-3 md:col-span-4">
               <span className="text-h3 font-emphasis uppercase">{config.appName}</span>
-              <p className="text-small">
-                AI research assistant with full citation transparency.
-              </p>
+              <p className="text-small">AI research assistant with full citation transparency.</p>
             </div>
             <div className="space-y-3 md:col-span-2">
               <p className="brutal-label">Product</p>

@@ -32,20 +32,26 @@
 - ✅ Memory agent for project-level context
 
 ## Phase 6: Research Intelligence
-- ✅ FR-F: Literature review, gap analysis, source comparison, survey generation
+- ⚠️ FR-F: Literature review, gap analysis, source comparison, survey generation.
+  Report generation still runs on the templated `MockAgentService`
+  (`report_service` → `agent_service_mock`), so artifacts are not yet retrieved from the
+  project corpus. Wiring the real `AgentService` into `report_runner` is open work.
 - ✅ Structured Markdown export
 - ✅ Citation integrity validation
 
 ## Phase 7: Knowledge Graph (Stretch)
-- Entity extraction during ingestion and retrieval
-- Relational node/edge tables in PostgreSQL
-- Interactive graph visualization (coming soon)
+- ✅ Entity extraction during ingestion and retrieval
+- ✅ Relational node/edge tables in PostgreSQL (migration `f3f6c804751d`)
+- ✅ Interactive graph visualization (reactflow) with node-details sidebar
+- ✅ Graph API with node-type filtering; unit and integration tests
 
 ## Phase 8: Dataset Analytics (Stretch)
-- CSV upload with pandas profiling
-- AI-generated analysis code (sandboxed)
-- Chart generation
-
+- ✅ CSV upload with pandas profiling (migration `0008`)
+- ✅ AI-generated analysis code run in a constrained child process: static checks,
+  isolated interpreter, scratch directory, minimal environment, timeout, POSIX rlimits
+- ✅ Chart generation; editor role required to upload or delete datasets
+- ⚠️ Known limit: rlimits are POSIX-only, so generated code is refused outside POSIX
+  when `ENVIRONMENT=production`
 ## Phase 9: Reports & Export (Core/Polish)
 - ✅ FR-G: Markdown → PDF/DOCX/LaTeX export
 - ✅ Executive summary generator
@@ -63,9 +69,19 @@
 - ✅ Notification scoping (only owner can mark own notifications read)
 
 ## Phase 11: Testing/Security/Deployment Continuous
-- Cold-start reproducibility: Fresh clone + README only → running app via `docker compose up`, zero undocumented steps
-- Per-phase discipline: Every phase ends with code + `PHASE_LOG.md` entry + updated `.env.example`/README + tests
-- Enhanced test coverage: Expand integration tests across all user flows (document upload, query, generation, member management)
-- Security hardening: pip-audit vulnerability scanning, dependency updates, CSP headers, rate limiting verification
-- Deployment pipeline: Streamline `docker compose up` for production, add health checks, improve cold-start timing
-- Observability: Structured logging correlation IDs, metrics endpoints, phased deployment canary strategy
+Delivered:
+- ✅ `X-Request-ID` correlation across proxy, API logs, and responses
+- ✅ Container health checks (Postgres, Redis, backend, frontend, proxy)
+- ✅ CI: ruff, strict mypy, unit and integration tests, prettier, eslint, tsc, vitest,
+  next build, `pip-audit`, `npm audit`, Docker image builds
+- ✅ Frontend on Next.js 15 (clears the Next.js 14 advisories); patched test toolchain
+- ✅ Security headers on API responses (nosniff, referrer policy, COOP, `frame-ancestors`,
+  HSTS outside development); login, register, and query rate limits
+- ✅ Production compose overlay behind an nginx proxy
+
+Not delivered (tracked as follow-ups):
+- ⬜ Metrics endpoint
+- ⬜ Full Content-Security-Policy for the Next.js frontend
+- ⬜ httpOnly-cookie token storage (tokens are in `localStorage`; design §9.2)
+- ⬜ Durable job queue (`BackgroundTasks` jobs do not survive a restart; design R18)
+- ⬜ Stronger analytics sandbox boundary (container or unprivileged user)

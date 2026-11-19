@@ -7,18 +7,18 @@ import { cn } from '@/lib/utils/cn';
  */
 export const Card = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn('brutal-panel p-6', className)}
-      {...props}
-    />
+    <div ref={ref} className={cn('brutal-panel p-6', className)} {...props} />
   ),
 );
 Card.displayName = 'Card';
 
 export const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex flex-col gap-3 brutal-divider pb-4', className)} {...props} />
+    <div
+      ref={ref}
+      className={cn('brutal-divider flex flex-col gap-3 pb-4', className)}
+      {...props}
+    />
   ),
 );
 CardHeader.displayName = 'CardHeader';
@@ -39,15 +39,13 @@ export const CardDescription = forwardRef<
 CardDescription.displayName = 'CardDescription';
 
 export const CardContent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('pt-4', className)} {...props} />
-  ),
+  ({ className, ...props }, ref) => <div ref={ref} className={cn('pt-4', className)} {...props} />,
 );
 CardContent.displayName = 'CardContent';
 
 export const CardFooter = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-center brutal-divider pt-4', className)} {...props} />
+    <div ref={ref} className={cn('brutal-divider flex items-center pt-4', className)} {...props} />
   ),
 );
 CardFooter.displayName = 'CardFooter';

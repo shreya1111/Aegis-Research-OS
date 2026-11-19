@@ -21,7 +21,7 @@ export function BackendStatus({ health }: BackendStatusProps): React.JSX.Element
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-surface border px-4 py-3 text-body-sm',
+        'text-body-sm flex items-center gap-3 rounded-surface border px-4 py-3',
         isOnline
           ? 'border-success/30 bg-success/10 text-success'
           : 'border-destructive/30 bg-destructive/10 text-destructive',

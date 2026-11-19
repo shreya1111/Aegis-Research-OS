@@ -188,7 +188,7 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
               </div>
               <span
                 className={cn(
-                  'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-caption font-medium',
+                  'text-caption inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-medium',
                   status.className,
                 )}
               >
@@ -200,7 +200,7 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
             {(report.status === 'completed' || report.status === 'failed') && (
               <CardContent className="flex flex-wrap items-center justify-between gap-3">
                 {report.status === 'failed' ? (
-                  <p className="min-w-0 text-body-sm text-destructive">
+                  <p className="text-body-sm min-w-0 text-destructive">
                     {report.error_message ?? 'Generation failed.'}
                   </p>
                 ) : (
@@ -275,7 +275,7 @@ export function ReportList({ reports, isLoading, onDelete }: ReportListProps): R
             <DialogTitle>Executive summary</DialogTitle>
             <p className="text-body-sm text-muted-foreground">{summary?.title}</p>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-body-sm">
+          <div className="text-body-sm max-h-[60vh] overflow-y-auto whitespace-pre-wrap">
             {summary?.text}
           </div>
           <DialogFooter>

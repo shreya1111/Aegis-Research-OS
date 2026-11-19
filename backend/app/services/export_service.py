@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import html
 import importlib.util
 import io
 import re
-from enum import Enum
+from enum import StrEnum
 from typing import Any
+from xml.etree.ElementTree import Element
 
 import markdown
 from docx import Document
 from docx.shared import Pt, RGBColor
+from markdown.extensions import Extension
+from markdown.treeprocessors import Treeprocessor
 
 from app.core.errors import ExportError
 from app.db.models.report import Report
@@ -20,7 +24,54 @@ from app.db.models.report import Report
 _weasyprint_available = importlib.util.find_spec("weasyprint") is not None
 
 
-class ExportFormat(str, Enum):
+_SAFE_URL_SCHEMES = ("http://", "https://", "mailto:", "#", "/")
+
+
+class _StripUnsafeUrls(Treeprocessor):
+    """Drop link and image targets whose scheme could run script (``javascript:``)."""
+
+    def run(self, root: Element) -> None:
+        for element in root.iter():
+            for attribute in ("href", "src"):
+                value = element.get(attribute)
+                if value is not None and not value.strip().lower().startswith(_SAFE_URL_SCHEMES):
+                    element.set(attribute, "#")
+
+
+class _SafeMarkdownExtension(Extension):
+    """Treat raw HTML in report text as literal text.
+
+    Report bodies are built from uploaded documents and LLM output, so they are
+    untrusted. With the HTML block and inline patterns removed, python-markdown
+    escapes ``<script>`` and friends instead of passing them through.
+    """
+
+    def extendMarkdown(self, md: markdown.Markdown) -> None:  # noqa: N802 - library hook name
+        md.preprocessors.deregister("html_block")
+        md.inlinePatterns.deregister("html")
+        md.treeprocessors.register(_StripUnsafeUrls(md), "strip_unsafe_urls", 5)
+
+
+_LATEX_SPECIALS = {
+    "\\": r"\textbackslash{}",
+    "{": r"\{",
+    "}": r"\}",
+    "$": r"\$",
+    "&": r"\&",
+    "#": r"\#",
+    "^": r"\textasciicircum{}",
+    "_": r"\_",
+    "%": r"\%",
+    "~": r"\textasciitilde{}",
+}
+
+
+def _escape_latex(text: str) -> str:
+    """Escape LaTeX control characters in one pass so escapes are not re-escaped."""
+    return re.sub(r"[\\{}$&#^_%~]", lambda match: _LATEX_SPECIALS[match.group(0)], text)
+
+
+class ExportFormat(StrEnum):
     """Supported export formats for research artifacts."""
 
     HTML = "html"
@@ -41,6 +92,7 @@ class ExportService:
                 "markdown.extensions.fenced_code",
                 "markdown.extensions.toc",
                 "markdown.extensions.footnotes",
+                _SafeMarkdownExtension(),
             ]
         )
 
@@ -206,13 +258,14 @@ class ExportService:
                 paragraph.add_run(part)
 
     def _create_styled_html(self, title: str, content: str) -> str:
-        """Create a styled HTML document."""
+        """Create a styled HTML document. ``content`` is already-rendered, escaped HTML."""
+        safe_title = html.escape(title)
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
+    <title>{safe_title}</title>
     <style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -273,21 +326,27 @@ class ExportService:
     </style>
 </head>
 <body>
-    <h1>{title}</h1>
+    <h1>{safe_title}</h1>
     {content}
 </body>
 </html>"""
 
     def _markdown_to_latex(self, title: str, markdown_content: str) -> str:
         """Convert markdown to LaTeX format."""
-        latex_content = markdown_content
-
-        # Replace markdown headers with LaTeX commands
-        latex_content = re.sub(
-            r"^### (.+)$", r"\\subsubsection{\1}", latex_content, flags=re.MULTILINE
-        )
-        latex_content = re.sub(r"^## (.+)$", r"\\subsection{\1}", latex_content, flags=re.MULTILINE)
-        latex_content = re.sub(r"^# (.+)$", r"\\section{\1}", latex_content, flags=re.MULTILINE)
+        # The body is untrusted (uploaded documents, LLM output). Escape LaTeX
+        # control characters line by line first; heading markers are the only
+        # markdown syntax that uses one (``#``), so they are matched before escaping.
+        heading_commands = {1: "section", 2: "subsection", 3: "subsubsection"}
+        converted_lines: list[str] = []
+        for line in markdown_content.split("\n"):
+            heading = re.match(r"^(#{1,3}) (.+)$", line)
+            if heading:
+                command = heading_commands[len(heading.group(1))]
+                converted_lines.append(f"\\{command}{{{_escape_latex(heading.group(2))}}}")
+            else:
+                converted_lines.append(_escape_latex(line))
+        latex_content = "\n".join(converted_lines)
+        safe_title = _escape_latex(title)
 
         # Replace bold and italic
         latex_content = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", latex_content)
@@ -308,7 +367,7 @@ class ExportService:
 
 \\geometry{{margin=1in}}
 
-\\title{{{title}}}
+\\title{{{safe_title}}}
 \\author{{Generated by Aegis Research OS}}
 \\date{{\\today}}
 
@@ -323,8 +382,9 @@ class ExportService:
 
     def _make_filename(self, title: str, extension: str) -> str:
         """Create a safe filename from the report title."""
-        # Remove or replace unsafe characters
-        safe_title = re.sub(r"[^\w\s-]", "", title)
+        # ASCII only: the name goes into a Content-Disposition header, which is
+        # latin-1 encoded, so a title such as "研究" would otherwise fail the response.
+        safe_title = re.sub(r"[^A-Za-z0-9\s-]", "", title)
         safe_title = re.sub(r"[-\s]+", "-", safe_title)
         safe_title = safe_title.strip("-").lower()
 
@@ -332,4 +392,4 @@ class ExportService:
         if len(safe_title) > 50:
             safe_title = safe_title[:50].rstrip("-")
 
-        return f"{safe_title}.{extension}"
+        return f"{safe_title or 'report'}.{extension}"

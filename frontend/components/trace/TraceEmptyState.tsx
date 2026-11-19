@@ -5,7 +5,7 @@ export function TraceEmptyState(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-2 rounded-surface border border-dashed px-4 py-8 text-center">
       <p className="text-body-sm font-medium">No reasoning trace yet</p>
-      <p className="max-w-xs text-caption text-muted-foreground">
+      <p className="text-caption max-w-xs text-muted-foreground">
         Ask a question in the chat to see each agent step — retrieval, summarisation, synthesis,
         review — appear here as it runs.
       </p>

@@ -46,7 +46,7 @@ export function Toaster(): React.JSX.Element {
             key={toast.id}
             role="status"
             className={cn(
-              'pointer-events-auto flex items-start gap-3 rounded-surface border px-4 py-3 text-body-sm shadow-lg',
+              'text-body-sm pointer-events-auto flex items-start gap-3 rounded-surface border px-4 py-3 shadow-lg',
               'duration-200 animate-in fade-in slide-in-from-bottom-2',
               style.className,
             )}

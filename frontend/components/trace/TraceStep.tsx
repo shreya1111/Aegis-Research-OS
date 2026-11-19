@@ -14,7 +14,7 @@ export function TraceStep({ step }: TraceStepProps): React.JSX.Element {
   return (
     <li
       className={cn(
-        'flex flex-col gap-1 rounded-surface border px-3 py-2 text-body-sm',
+        'text-body-sm flex flex-col gap-1 rounded-surface border px-3 py-2',
         isFailed ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card',
       )}
     >
@@ -22,7 +22,7 @@ export function TraceStep({ step }: TraceStepProps): React.JSX.Element {
         <span className="font-medium">{step.agent_name}</span>
         <span
           className={cn(
-            'rounded-full px-2 py-0.5 text-caption font-medium',
+            'text-caption rounded-full px-2 py-0.5 font-medium',
             isFailed ? 'bg-destructive/15 text-destructive' : 'bg-success/15 text-success',
           )}
         >
@@ -32,7 +32,7 @@ export function TraceStep({ step }: TraceStepProps): React.JSX.Element {
       <p className="text-caption text-muted-foreground">
         {step.output_summary || step.input_summary}
       </p>
-      <div className="flex gap-3 text-caption text-muted-foreground">
+      <div className="text-caption flex gap-3 text-muted-foreground">
         <span>{Math.round(step.latency_ms)} ms</span>
         {step.tokens_used > 0 && <span>{step.tokens_used} tokens</span>}
         {step.estimated_cost > 0 && <span>${step.estimated_cost.toFixed(4)}</span>}

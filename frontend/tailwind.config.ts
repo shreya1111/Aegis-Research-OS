@@ -13,7 +13,7 @@ const config: Config = {
     container: {
       center: true,
       padding: 'var(--dp-spacing-gap)',
-      screens: { 
+      screens: {
         sm: '640px',
         md: '720px',
         lg: '1050px',
@@ -83,17 +83,53 @@ const config: Config = {
       },
       fontSize: {
         // Neo Brutalism display scales - heavy and uppercase
-        'display-xl': ['5rem', { lineHeight: '0.95', letterSpacing: 'var(--dp-typography-display-tracking)', fontWeight: 'var(--dp-typography-display-weight)' }],
-        'display-lg': ['3.5rem', { lineHeight: '1', letterSpacing: 'var(--dp-typography-display-tracking)', fontWeight: 'var(--dp-typography-display-weight)' }],
-        display: ['2.5rem', { lineHeight: '1.1', letterSpacing: 'var(--dp-typography-display-tracking)', fontWeight: 'var(--dp-typography-display-weight)' }],
+        'display-xl': [
+          '5rem',
+          {
+            lineHeight: '0.95',
+            letterSpacing: 'var(--dp-typography-display-tracking)',
+            fontWeight: 'var(--dp-typography-display-weight)',
+          },
+        ],
+        'display-lg': [
+          '3.5rem',
+          {
+            lineHeight: '1',
+            letterSpacing: 'var(--dp-typography-display-tracking)',
+            fontWeight: 'var(--dp-typography-display-weight)',
+          },
+        ],
+        display: [
+          '2.5rem',
+          {
+            lineHeight: '1.1',
+            letterSpacing: 'var(--dp-typography-display-tracking)',
+            fontWeight: 'var(--dp-typography-display-weight)',
+          },
+        ],
         h1: ['2rem', { lineHeight: '1.1', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
         h2: ['1.5rem', { lineHeight: '1.2', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
         h3: ['1.25rem', { lineHeight: '1.3', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
-        body: ['var(--dp-typography-body)', { lineHeight: '1.5', fontWeight: 'var(--dp-typography-reading-weight)' }],
-        reading: ['var(--dp-typography-reading)', { lineHeight: '1.6', fontWeight: 'var(--dp-typography-reading-weight)' }],
-        small: ['var(--dp-typography-small)', { lineHeight: '1.5', fontWeight: 'var(--dp-typography-reading-weight)' }],
+        body: [
+          'var(--dp-typography-body)',
+          { lineHeight: '1.5', fontWeight: 'var(--dp-typography-reading-weight)' },
+        ],
+        reading: [
+          'var(--dp-typography-reading)',
+          { lineHeight: '1.6', fontWeight: 'var(--dp-typography-reading-weight)' },
+        ],
+        small: [
+          'var(--dp-typography-small)',
+          { lineHeight: '1.5', fontWeight: 'var(--dp-typography-reading-weight)' },
+        ],
         metadata: ['var(--dp-typography-metadata)', { lineHeight: '1.4' }],
-        label: ['var(--dp-typography-label)', { lineHeight: '1.4', textTransform: 'uppercase', fontWeight: 'var(--dp-typography-emphasis-weight)' }],
+        label: [
+          'var(--dp-typography-label)',
+          {
+            lineHeight: '1.4',
+            fontWeight: 'var(--dp-typography-emphasis-weight)',
+          },
+        ],
       },
       fontWeight: {
         reading: 'var(--dp-typography-reading-weight)',
@@ -108,7 +144,7 @@ const config: Config = {
         'gap-compact': 'var(--dp-spacing-gap-compact)',
       },
       boxShadow: {
-        'brutal': '6px 6px 0 0 hsl(var(--foreground))',
+        brutal: '6px 6px 0 0 hsl(var(--foreground))',
         'brutal-sm': '4px 4px 0 0 hsl(var(--foreground))',
         'brutal-lg': '8px 8px 0 0 hsl(var(--foreground))',
         'brutal-hover': '8px 8px 0 0 hsl(var(--foreground))',

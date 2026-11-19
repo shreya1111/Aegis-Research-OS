@@ -94,7 +94,7 @@ export default function ProjectSettingsPage(): React.JSX.Element {
               <Skeleton className="h-4 w-3/4" />
             </>
           ) : (
-            <dl className="flex flex-col gap-3 text-body-sm">
+            <dl className="text-body-sm flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <dt className="text-muted-foreground">Title</dt>
                 <dd className="font-medium">{project?.title}</dd>

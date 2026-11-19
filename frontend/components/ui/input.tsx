@@ -13,7 +13,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({ className, ...p
       ref={ref}
       className={cn(
         'flex h-12 w-full rounded-control border-panel border-input bg-card px-4 py-3 text-body font-reading',
-        'placeholder:text-muted-foreground placeholder:font-reading',
+        'placeholder:font-reading placeholder:text-muted-foreground',
         'disabled:cursor-not-allowed disabled:opacity-50',
         'aria-invalid:border-destructive',
         className,

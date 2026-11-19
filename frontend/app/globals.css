@@ -19,8 +19,8 @@
     --dp-color-signal: #ff4332; /* red arrow */
     --dp-color-field: #d4bdff; /* violet band */
     --dp-color-contrast: #ffffff; /* white reading areas */
-    
-    --dp-typography-face: "Host Grotesk", sans-serif;
+
+    --dp-typography-face: 'Host Grotesk', sans-serif;
     --dp-typography-body: 17px;
     --dp-typography-reading: 16px;
     --dp-typography-small: 14px;
@@ -30,7 +30,7 @@
     --dp-typography-emphasis-weight: 800;
     --dp-typography-display-weight: 900;
     --dp-typography-display-tracking: -0.065em;
-    
+
     --dp-spacing-gap: 24px;
     --dp-spacing-gap-compact: 18px;
     --dp-radius-control: 0;
@@ -40,7 +40,7 @@
     --dp-motion-interaction: 0s;
 
     /* Font stacks - Host Grotesk with fallback */
-    --font-sans: "Host Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Host Grotesk', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
 
     /* Design system mapped to semantic tokens */
@@ -94,7 +94,7 @@
     --dp-color-signal: #ff4332;
     --dp-color-field: #4a3a66;
     --dp-color-contrast: #0a0a0a;
-    
+
     --background: 30 24% 8%;
     --foreground: 48 100% 92%;
 
@@ -138,7 +138,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-reading antialiased;
+    @apply bg-background font-reading text-foreground antialiased;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
@@ -164,15 +164,15 @@
 /* Neo Brutalism utility classes */
 @layer components {
   .brutal-display {
-    @apply font-display text-display uppercase leading-tight tracking-display;
+    @apply text-display font-display uppercase leading-tight tracking-display;
   }
 
   .brutal-display-lg {
-    @apply font-display text-display-lg uppercase leading-tight tracking-display;
+    @apply text-display-lg font-display uppercase leading-tight tracking-display;
   }
 
   .brutal-display-xl {
-    @apply font-display text-display-xl uppercase leading-none tracking-display;
+    @apply text-display-xl font-display uppercase leading-none tracking-display;
   }
 
   .brutal-panel {

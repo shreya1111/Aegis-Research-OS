@@ -82,7 +82,7 @@ export default function ProjectGraphPage(): React.JSX.Element {
           <h1 className="text-h2 font-semibold">Knowledge graph</h1>
         </div>
         <div className="flex h-96 items-center justify-center rounded-surface border border-dashed">
-          <p className="flex items-center gap-2 text-body-sm text-muted-foreground">
+          <p className="text-body-sm flex items-center gap-2 text-muted-foreground">
             <Loader2 className="size-4 animate-spin" aria-hidden />
             Loading graph…
           </p>
@@ -101,7 +101,7 @@ export default function ProjectGraphPage(): React.JSX.Element {
 
         <div className="flex flex-wrap items-center gap-4">
           {graphStats && (
-            <p className="flex items-center gap-2 text-body-sm text-muted-foreground">
+            <p className="text-body-sm flex items-center gap-2 text-muted-foreground">
               <Database className="size-4" aria-hidden />
               <span>{graphStats.totalNodes.toLocaleString()} nodes</span>
               <span aria-hidden>·</span>

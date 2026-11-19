@@ -90,7 +90,7 @@ export function ProjectShell({ projectId, children }: ProjectShellProps): React.
         >
           <Menu className="size-5" aria-hidden />
         </Button>
-        <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-body-sm">
+        <nav aria-label="Breadcrumb" className="text-body-sm flex min-w-0 items-center gap-2">
           <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
             Dashboard
           </Link>
@@ -127,7 +127,7 @@ export function ProjectShell({ projectId, children }: ProjectShellProps): React.
               )}
             >
               <div className="flex items-center justify-between border-b px-2 py-1.5">
-                <span className="pl-1 text-caption uppercase tracking-widest text-muted-foreground">
+                <span className="text-caption pl-1 uppercase tracking-widest text-muted-foreground">
                   Workspace
                 </span>
                 <Button

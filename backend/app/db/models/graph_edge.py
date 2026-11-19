@@ -7,7 +7,7 @@ topic membership, institutional affiliations.
 from __future__ import annotations
 
 import uuid
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Float, ForeignKey, Index, String
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from app.db.models.project import Project
 
 
-class EdgeType(str, Enum):
+class EdgeType(StrEnum):
     """Types of relationships in the knowledge graph."""
 
     CO_AUTHOR = "co_author"

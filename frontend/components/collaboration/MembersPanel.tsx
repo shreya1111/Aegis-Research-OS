@@ -144,8 +144,8 @@ export function MembersPanel({ projectId, role }: MembersPanelProps): React.JSX.
                 className="flex flex-wrap items-center justify-between gap-3 py-3"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-body-sm font-medium">{member.name}</p>
-                  <p className="truncate text-body-sm text-muted-foreground">{member.email}</p>
+                  <p className="text-body-sm truncate font-medium">{member.name}</p>
+                  <p className="text-body-sm truncate text-muted-foreground">{member.email}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export function MembersPanel({ projectId, role }: MembersPanelProps): React.JSX.
                       </Label>
                       <select
                         id={`role-${member.user_id}`}
-                        className="h-9 rounded-md border bg-background px-2 text-body-sm"
+                        className="text-body-sm h-9 rounded-md border bg-background px-2"
                         value={member.role}
                         disabled={isMutating}
                         onChange={(event) =>
@@ -209,7 +209,7 @@ export function MembersPanel({ projectId, role }: MembersPanelProps): React.JSX.
                 <Label htmlFor="invite-role">Role</Label>
                 <select
                   id="invite-role"
-                  className="mt-1 h-10 rounded-md border bg-background px-2 text-body-sm"
+                  className="text-body-sm mt-1 h-10 rounded-md border bg-background px-2"
                   value={inviteRole}
                   disabled={isMutating}
                   onChange={(event) => setInviteRole(event.target.value as InvitableRole)}

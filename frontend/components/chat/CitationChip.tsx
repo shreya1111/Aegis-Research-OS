@@ -55,7 +55,7 @@ export function CitationChip({ marker, citation }: CitationChipProps): React.JSX
         aria-controls={popoverId}
         className={cn(
           'mx-0.5 inline-flex items-center rounded-full border border-primary/30 bg-primary/10',
-          'px-1.5 py-0.5 text-caption font-medium text-primary hover:bg-primary/20',
+          'text-caption px-1.5 py-0.5 font-medium text-primary hover:bg-primary/20',
         )}
       >
         {marker}
@@ -73,7 +73,7 @@ export function CitationChip({ marker, citation }: CitationChipProps): React.JSX
           {citation.external_source ? (
             <>
               <p className="font-medium">{citation.external_source.title}</p>
-              <p className="mt-1 text-caption text-muted-foreground">
+              <p className="text-caption mt-1 text-muted-foreground">
                 {citation.external_source.provider}
               </p>
               {citation.external_source.url && (
@@ -91,7 +91,7 @@ export function CitationChip({ marker, citation }: CitationChipProps): React.JSX
             <>
               <p className="font-medium">Document source</p>
               {typeof citation.page === 'number' && (
-                <p className="mt-1 text-caption text-muted-foreground">Page {citation.page}</p>
+                <p className="text-caption mt-1 text-muted-foreground">Page {citation.page}</p>
               )}
             </>
           )}

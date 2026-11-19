@@ -116,7 +116,7 @@ export function NotificationsMenu(): React.JSX.Element | null {
         {unread > 0 ? (
           <span
             aria-hidden="true"
-            className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-caption font-semibold text-primary-foreground"
+            className="text-caption ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-semibold text-primary-foreground"
           >
             {unread > 9 ? '9+' : unread}
           </span>
@@ -130,7 +130,7 @@ export function NotificationsMenu(): React.JSX.Element | null {
           className="absolute right-0 z-50 mt-2 w-80 rounded-surface border bg-card p-2 shadow-lg"
         >
           {items.length === 0 ? (
-            <p className="px-2 py-4 text-body-sm text-muted-foreground">
+            <p className="text-body-sm px-2 py-4 text-muted-foreground">
               Nothing here yet. Report and invitation updates will appear here.
             </p>
           ) : (
@@ -142,7 +142,7 @@ export function NotificationsMenu(): React.JSX.Element | null {
                     className="flex w-full flex-col gap-1 rounded-control px-2 py-2 text-left hover:bg-muted"
                     onClick={() => void handleSelect(item)}
                   >
-                    <span className="flex items-center gap-2 text-body-sm font-medium">
+                    <span className="text-body-sm flex items-center gap-2 font-medium">
                       {!item.read ? (
                         <span
                           aria-hidden="true"

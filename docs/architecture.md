@@ -20,7 +20,7 @@ separate vector store, relational modelling defers a graph database, and FastAPI
 
 ```mermaid
 flowchart TB
-    U[User Browser] --> FE[Next.js 14 Frontend<br/>App Router · TypeScript · Tailwind]
+    U[User Browser] --> FE[Next.js 15 Frontend<br/>App Router · TypeScript · Tailwind]
     FE --> API[FastAPI Backend<br/>Python 3.11+ · Pydantic v2]
 
     API --> AUTH[Auth Service<br/>JWT · bcrypt]
@@ -82,6 +82,27 @@ api  →  services  →  repositories  →  core
 
 Feature routers, database models, migrations, agents, and retrieval arrive in the
 phases that own them; nothing is stubbed ahead of its phase.
+
+## Delivered through Phase 11
+
+Phase 0 is the foundation above. Each later phase added the following (see
+[`PHASE_LOG.md`](../PHASE_LOG.md) for the per-phase checklist):
+
+| Phase | Added |
+| --- | --- |
+| 1 | Registration, login, JWT access and refresh tokens, projects |
+| 3 | PDF and DOCX ingestion, OCR fallback, token-aware chunking, embeddings |
+| 4 | Hybrid retrieval (pgvector + full-text search, RRF fusion, optional re-rank), cited answers |
+| 5 | Seven-agent LangGraph pipeline, trace storage, Reasoning Trace panel, project memory |
+| 6, 9 | Research reports and PDF, DOCX, and LaTeX export |
+| 7 | Knowledge graph: entity extraction, node and edge tables, graph view |
+| 8 | Dataset analytics: CSV profiling and sandboxed AI-generated analysis |
+| 10 | Project roles (owner, editor, viewer), activity log, notifications, usage dashboard |
+| 11 | Request correlation, health checks, CI audits, production compose overlay and proxy |
+
+Known limits: `BackgroundTasks` jobs are not durable across a restart, browser
+tokens live in `localStorage`, and the analytics sandbox's resource caps need POSIX.
+Each is listed under Phase 11 follow-ups in the phase log.
 
 ## Communication
 

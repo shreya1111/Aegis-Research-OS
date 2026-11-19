@@ -29,7 +29,9 @@ RUN python -m venv /opt/venv \
     # without this pip would otherwise resolve the default CUDA-enabled
     # build from PyPI, pulling several GB of unused NVIDIA libraries
     # (cudnn/cusparselt/nccl) into the image and dramatically slowing builds.
-    && /opt/venv/bin/pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu \
+    # Keep this version identical to the torch pin in backend/pyproject.toml,
+    # otherwise `pip install .` below replaces the CPU build with the PyPI one.
+    && /opt/venv/bin/pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cpu \
     && /opt/venv/bin/pip install .
 
 # ----------------------------------------------------------------------------

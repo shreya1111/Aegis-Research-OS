@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from app.db.models.project import Project
 
 
-class ReportType(str, Enum):
+class ReportType(StrEnum):
     """Types of research artifacts that can be generated."""
 
     LITERATURE_REVIEW = "literature_review"
@@ -24,7 +24,7 @@ class ReportType(str, Enum):
     SURVEY = "survey"
 
 
-class ReportStatus(str, Enum):
+class ReportStatus(StrEnum):
     """Generation status of a research artifact."""
 
     PENDING = "pending"
