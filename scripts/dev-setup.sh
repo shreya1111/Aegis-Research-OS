@@ -31,7 +31,7 @@ fi
 note 'Backend dependencies installed.'
 note 'Integration tests require a running Postgres with an "aegis_test" database.'
 note 'After starting the dev stack, create it once with:'
-note '  docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml exec postgres psql -U aegis -d aegis -c "CREATE DATABASE aegis_test"'
+note '  docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml exec postgres psql -U aegis -d aegis -c "CREATE DATABASE aegis_test"'
 
 step 'Frontend (npm dependencies)'
 cd "${REPO_ROOT}/frontend"
@@ -41,7 +41,7 @@ note 'Frontend dependencies installed.'
 step 'Done'
 cat <<'EOF'
 Next steps:
-  Full stack    docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
+  Full stack    docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
   Backend only  backend/.venv/bin/python -m uvicorn app.main:app --reload   (run from backend/)
   Frontend only npm run dev                                                 (run from frontend/)
   Verify        ./scripts/verify.sh

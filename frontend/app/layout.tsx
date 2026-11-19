@@ -37,7 +37,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-dvh font-sans">
+      {/* Browser extensions (ColorZilla, Grammarly, ...) add attributes to <body>
+          before React hydrates. This suppresses only that element's attribute
+          warning, not mismatches in its children. */}
+      <body className="min-h-dvh font-sans" suppressHydrationWarning>
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>{children}</AuthProvider>

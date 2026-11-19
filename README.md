@@ -51,7 +51,7 @@ cd aegis-research-os
 # Create .env from the documented contract, then set POSTGRES_PASSWORD
 cp .env.example .env
 
-docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
+docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
 ```
 
 | Service | URL |
@@ -62,6 +62,9 @@ docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev
 
 The landing page reports whether the API is reachable, so a successful start is
 visible without reading logs.
+
+`--env-file .env` is required: Compose otherwise looks for `.env` next to the compose
+files (`deployment/`), not in the repository root.
 
 ## Local development without Docker
 
@@ -105,7 +108,7 @@ dedicated `aegis_test` database (schema is created and dropped per test, so this
 database stays empty between runs — it only needs to exist once):
 
 ```bash
-docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml \
+docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml \
   exec postgres psql -U aegis -d aegis -c "CREATE DATABASE aegis_test"
 ```
 

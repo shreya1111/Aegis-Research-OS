@@ -1,7 +1,7 @@
 # =============================================================================
 # Production override: no source mounts, no reload, proxy-fronted ingress
 #
-#   docker compose -f deployment/docker-compose.yml \
+#   docker compose --env-file .env -f deployment/docker-compose.yml \
 #                  -f deployment/docker-compose.prod.yml up -d
 # =============================================================================
 

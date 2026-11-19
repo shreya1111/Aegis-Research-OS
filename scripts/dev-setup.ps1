@@ -76,7 +76,7 @@ if (-not $SkipFrontend) {
 Write-Step 'Done'
 Write-Host @'
 Next steps:
-  Full stack   docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
+  Full stack   docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
   Backend only backend/.venv/Scripts/python.exe -m uvicorn app.main:app --reload   (run from backend/)
   Frontend only npm run dev                                                        (run from frontend/)
   Test setup   pwsh ./scripts/setup-test-db.ps1                                   (creates aegis_test database)

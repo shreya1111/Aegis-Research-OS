@@ -2,7 +2,7 @@
 # Base topology: postgres · redis · backend · frontend
 #
 # Run from the repository root:
-#   docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
+#   docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up
 # =============================================================================
 
 name: aegis-research-os

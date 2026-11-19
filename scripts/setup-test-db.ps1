@@ -37,14 +37,14 @@ $ContainerStatus = docker inspect -f '{{.State.Status}}' $ContainerName 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Postgres container '$ContainerName' not found."
     Write-Error "Start the development stack first:"
-    Write-Error "  docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up -d"
+    Write-Error "  docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up -d"
     exit 1
 }
 
 if ($ContainerStatus -ne "running") {
     Write-Error "Postgres container '$ContainerName' is not running (status: $ContainerStatus)."
     Write-Error "Start the development stack first:"
-    Write-Error "  docker compose -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up -d"
+    Write-Error "  docker compose --env-file .env -f deployment/docker-compose.yml -f deployment/docker-compose.dev.yml up -d"
     exit 1
 }
 

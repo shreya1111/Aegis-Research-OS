@@ -137,3 +137,11 @@ graphify-out/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+01_analysis_and_improvements.md
+02_master_prompt.md
+03_phase_prompts.md
+04_architecture_and_specs.md
+05_project_report_outline.md
+design.md
+PHASE_LOG.md
